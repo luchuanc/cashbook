@@ -66,7 +66,8 @@ const login = async () => {
     doApi.post("api/login", loginParam.value).then((res) => {
       Alert.success("登录成功");
       const target = fromUrl.value || "/";
-      navigateTo(target);
+      // 使用硬跳转确保浏览器在新请求中正确携带刚设置的 Cookie
+      window.location.href = target;
     });
   }
 };
