@@ -12,6 +12,7 @@ import {
   SunIcon,
   MoonIcon,
   XMarkIcon,
+  Cog6ToothIcon,
 } from "@heroicons/vue/24/outline";
 
 interface Menu {
@@ -78,6 +79,12 @@ const items: Menu[] = [
     title: "类型管理",
     path: "types",
     icon: Squares2X2Icon,
+    color: "text-brand-500",
+  },
+  {
+    title: "默认类型管理",
+    path: "default-types",
+    icon: Cog6ToothIcon,
     color: "text-brand-500",
   },
   {

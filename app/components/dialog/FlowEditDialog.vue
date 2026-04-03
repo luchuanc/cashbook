@@ -37,7 +37,7 @@
         </div>
 
         <!-- 流水类型 -->
-        <div>
+        <div v-show="isExpanded">
           <label
             class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"
           >
@@ -60,7 +60,7 @@
         </div>
 
         <!-- 支出类型/收入类型 -->
-        <div>
+        <div v-show="isExpanded">
           <label
             class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"
           >
@@ -167,7 +167,7 @@
         </div>
 
         <!-- 流水归属 -->
-        <div>
+        <div v-show="isExpanded">
           <label
             class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"
           >
@@ -212,7 +212,7 @@
         </div>
 
         <!-- 流水名称 -->
-        <div>
+        <div v-show="isExpanded">
           <label
             class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"
           >
@@ -255,7 +255,7 @@
         </div>
 
         <!-- 备注 -->
-        <div>
+        <div v-show="isExpanded">
           <label
             class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"
           >
@@ -267,6 +267,15 @@
             placeholder="请输入备注"
             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
           ></textarea>
+        </div>
+
+        <!-- 展开按钮 -->
+        <div class="flex justify-center pt-2 pb-1">
+          <button @click="isExpanded = !isExpanded" type="button" class="flex items-center text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+            <span>{{ isExpanded ? '收起其余选项' : '展开其余选项' }}</span>
+            <ChevronUpIcon v-if="isExpanded" class="w-4 h-4 ml-1" />
+            <ChevronDownIcon v-else class="w-4 h-4 ml-1" />
+          </button>
         </div>
       </div>
 
@@ -302,7 +311,7 @@
 import { showFlowEditDialog } from "~/utils/flag";
 import { onMounted, ref, computed, watch } from "vue";
 import { getIndustryType, getPayType } from "~/utils/apis";
-import { XMarkIcon } from "@heroicons/vue/24/outline";
+import { XMarkIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/vue/24/outline";
 
 // ESC键监听
 useEscapeKey(() => {
@@ -316,6 +325,8 @@ const { title, flow, successCallback } = defineProps([
   "flow",
   "successCallback",
 ]);
+
+const isExpanded = ref(false);
 
 // 表单弹窗标题选项
 const formTitle = ["新增流水", "修改流水"];
@@ -366,9 +377,15 @@ onMounted(() => {
   if (formTitle[0] === title) {
     const day =
       (flow && (flow as any).day) || new Date().toISOString().split("T")[0];
-    flowEdit.value = { flowType: "", day } as any;
+    const bookId = localStorage.getItem("bookId") || "";
+    const defFlowType = localStorage.getItem(`defaultFlowType_${bookId}`) || "";
+    const defAttribution = localStorage.getItem(`defaultAttribution_${bookId}`) || "";
+    const defPayType = localStorage.getItem(`defaultPayType_${bookId}`) || "";
+    
+    flowEdit.value = { flowType: defFlowType, attribution: defAttribution, payType: defPayType, day } as any;
   } else if (flow) {
     flowEdit.value = { ...flow } as any;
+    isExpanded.value = true; // 修改流水时默认展开所有选项
   }
   // 强制清除 id，确保新增不会走更新逻辑
   if (formTitle[0] === title && (flowEdit.value as any).id) {
@@ -667,6 +684,7 @@ const createOne = (again: boolean) => {
           flowEdit.value.money = undefined;
           flowEdit.value.name = undefined;
           flowEdit.value.description = undefined;
+          isExpanded.value = false;
         }
       }
     })
