@@ -4,6 +4,64 @@
     <div class="xl:max-w-[80vw] mx-auto w-full mt-2">
       <!-- Desktop & Tablet: Chart Carousel -->
       <div class="w-full" v-if="!loading">
+        <!-- 按月流水分析 -->
+        <div class="w-full bg-surface dark:bg-surface-dark rounded-lg shadow border border-frame dark:border-frame-dark p-2 md:p-4 mb-4">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-base md:text-lg font-semibold text-ink-primary dark:text-ink-onDark flex items-center gap-2">
+              按月流水分析 
+              <button @click="prevMonth" class="px-2 py-0.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded">
+                &lt;
+              </button>
+              <span class="text-sm font-medium">{{ currentMonth }}</span>
+              <button @click="nextMonth" class="px-2 py-0.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded">
+                &gt;
+              </button>
+            </h3>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-ink-muted hidden md:inline">流水归属:</span>
+              <select v-model="selectedAttribution" class="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500">
+                <option value="">全部</option>
+                <option v-for="item in attributionList" :key="item" :value="item">{{ item }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+            <div class="bg-green-50 dark:bg-green-900/20 p-3 md:p-4 rounded-lg">
+              <div class="text-xs md:text-sm text-green-600 dark:text-green-400 mb-1">总收入</div>
+              <div class="text-lg md:text-xl font-bold text-green-700 dark:text-green-300">¥ {{ monthData?.inSum || '0.00' }}</div>
+            </div>
+            <div class="bg-red-50 dark:bg-red-900/20 p-3 md:p-4 rounded-lg">
+              <div class="text-xs md:text-sm text-red-600 dark:text-red-400 mb-1">总支出</div>
+              <div class="text-lg md:text-xl font-bold text-red-700 dark:text-red-300">¥ {{ monthData?.outSum || '0.00' }}</div>
+            </div>
+            <div class="bg-blue-50 dark:bg-blue-900/20 p-3 md:p-4 rounded-lg">
+              <div class="text-xs md:text-sm text-blue-600 dark:text-blue-400 mb-1">全月结余</div>
+              <div class="text-lg md:text-xl font-bold text-blue-700 dark:text-blue-300">¥ {{ ((Number(monthData?.inSum || 0) - Number(monthData?.outSum || 0))).toFixed(2) }}</div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-800/50 p-3 md:p-4 rounded-lg">
+              <div class="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">不计收支</div>
+              <div class="text-lg md:text-xl font-bold text-gray-700 dark:text-gray-300">¥ {{ monthData?.zeroSum || '0.00' }}</div>
+            </div>
+          </div>
+          <!-- 月度消费前十饼图 -->
+          <div class="mt-4 border-t border-frame dark:border-frame-dark pt-4 w-full">
+            <ChartsCommonPie
+              :title="currentMonth + ' 消费类型前十'"
+              width="100%"
+              height="300px"
+              groupBy="industryType"
+              flowType="支出"
+              seriesName="消费类型"
+              :showLegend="true"
+              queryField="industryType"
+              :startDay="currentMonth + '-01'"
+              :endDay="currentMonth + '-31'"
+              :attribution="selectedAttribution || undefined"
+              :topN="10"
+            />
+          </div>
+        </div>
+
         <div
           class="w-full bg-surface dark:bg-surface-dark rounded-lg shadow border border-frame dark:border-frame-dark p-2 md:p-4 mb-4"
         >
@@ -341,13 +399,57 @@ definePageMeta({
   middleware: ["auth"],
 });
 
-import { ref, onMounted, onUnmounted, onBeforeUnmount, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, onBeforeUnmount, nextTick, watch } from "vue";
+import { doApi } from "@/utils/api";
 import DailyLineChart from "~/components/charts/DailyLineChart.vue";
 import MonthBar from "~/components/charts/MonthBar.vue";
 
 const windowWidth = ref(
   typeof window !== "undefined" ? window.innerWidth : 1200
 );
+
+// 当月流水分析相关逻辑
+const currentMonth = ref(new Date().toISOString().slice(0, 7));
+const attributionList = ref<string[]>([]);
+const selectedAttribution = ref<string>("");
+const monthData = ref<any>({});
+
+const fetchAttributions = async () => {
+  const res = await doApi.post<string[]>("api/entry/flow/getAttributions", {
+    bookId: localStorage.getItem("bookId"),
+  });
+  attributionList.value = res || [];
+};
+
+const fetchMonthAnalysis = async () => {
+  const res = await doApi.post<any>("api/entry/analytics/monthAnalysis", {
+    bookId: localStorage.getItem("bookId"),
+    month: currentMonth.value,
+    attribution: selectedAttribution.value || undefined,
+  });
+  if (res) {
+    monthData.value = res;
+  } else {
+    // 接口可能抛出空数据异常，给个兜底
+    monthData.value = {};
+  }
+};
+
+const prevMonth = () => {
+  const [year, month] = currentMonth.value.split('-').map(Number);
+  const date = new Date(year, month - 2, 1); // JS Date months are 0-indexed
+  currentMonth.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const nextMonth = () => {
+  const [year, month] = currentMonth.value.split('-').map(Number);
+  const date = new Date(year, month, 1);
+  currentMonth.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
+watch([selectedAttribution, currentMonth], () => {
+  fetchMonthAnalysis();
+});
 
 // 图表类型切换状态
 const expenseChartType = ref<"pie" | "bar">("pie");
@@ -369,6 +471,10 @@ onMounted(async () => {
   if (typeof window !== "undefined") {
     window.addEventListener("resize", handleResize);
   }
+  
+  fetchAttributions();
+  fetchMonthAnalysis();
+  
   // 等待DOM完全渲染
   await nextTick();
   loading.value = false;

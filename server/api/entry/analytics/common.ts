@@ -59,6 +59,13 @@ export default defineEventHandler(async (event) => {
     };
   }
 
+  // 支持归属过滤
+  if (body.attribution) {
+    where.attribution = {
+      equals: body.attribution,
+    };
+  }
+
   if (body.startDay && body.endDay) {
     where.day = {
       gte: body.startDay,

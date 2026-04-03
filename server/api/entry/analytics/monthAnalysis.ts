@@ -47,7 +47,7 @@ import prisma from "~~/server/lib/prisma";
  *               }
  */
 export default defineEventHandler(async (event) => {
-  const { bookId, flowType, month } = await readBody(event); // 获取查询参数
+  const { bookId, flowType, month, attribution } = await readBody(event); // 获取查询参数
   if (!bookId) {
     return error("请先选择账本");
   }
@@ -65,6 +65,12 @@ export default defineEventHandler(async (event) => {
   if (flowType) {
     where.flowType = {
       equals: flowType,
+    };
+  }
+
+  if (attribution) {
+    where.attribution = {
+      equals: attribution,
     };
   }
 
