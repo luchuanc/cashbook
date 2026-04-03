@@ -126,6 +126,13 @@
                 class="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"
               >
                 {{ item.day }}
+                <span
+                  v-if="item.attribution"
+                  class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-indigo-50 text-indigo-600 border border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800/50 rounded-md shadow-sm"
+                >
+                  <svg class="w-3 h-3 mr-1 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                  {{ item.attribution }}
+                </span>
               </td>
               <td
                 class="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"
@@ -250,8 +257,15 @@
               <h3 class="text-sm font-medium text-green-950 dark:text-white">
                 {{ item.name }}
               </h3>
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                {{ item.day }}
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
+                <span>{{ item.day }}</span>
+                <span
+                  v-if="item.attribution"
+                  class="ml-1 inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium bg-indigo-50 text-indigo-600 border border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800/50 rounded shadow-sm scale-95 origin-left"
+                >
+                  <svg class="w-2.5 h-2.5 mr-0.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                  {{ item.attribution }}
+                </span>
               </p>
             </div>
             <span
