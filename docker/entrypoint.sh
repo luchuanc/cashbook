@@ -8,7 +8,7 @@ echo "============================================="
 echo "Waiting for database to be ready..."
 MAX_RETRIES=15
 RETRY_COUNT=0
-until npx prisma db execute --stdin <<< "SELECT 1" > /dev/null 2>&1; do
+until echo "SELECT 1" | npx prisma db execute --stdin > /dev/null 2>&1; do
   RETRY_COUNT=$((RETRY_COUNT + 1))
   if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
     echo "ERROR: Database not ready after ${MAX_RETRIES} retries, starting anyway..."
