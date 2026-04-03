@@ -35,15 +35,16 @@ COPY --from=builder /app/.output/ ./
 #COPY --from=builder /app/.output/server/node_modules/ ./node_modules/
 #COPY --from=builder /app/.output/server/node_modules/.prisma/ ./.prisma/
 COPY ./prisma/ ./prisma/
+COPY ./prisma.config.ts ./prisma.config.ts
 
 # 2. 拷贝 entrypoint 脚本
 COPY ./docker/entrypoint.sh ./entrypoint.sh
 RUN chmod +x entrypoint.sh
 
 # 预装prisma，可以提升容器启动速度，但镜像体积会大很多
-RUN npm install -g prisma@7.6.0
+RUN npm install -g prisma@7.6.0 dotenv
 
-ENV DATABASE_URL="postgresql://postgres:123456@localhost:5432/cashbook?schema=public"
+ENV DATABASE_URL="postgresql://postgres:postgres@cashbook_db_local:5432/cashbook?schema=public"
 
 ENV NUXT_APP_VERSION="4.3.13"
 ENV NUXT_DATA_PATH="/app/data"
