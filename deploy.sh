@@ -5,21 +5,44 @@
 # 该脚本将从 Git 远端拉取最新代码，使用本地 Dockerfile 重新构建镜像并重启容器。
 # ==============================================================================
 
-set -e # 遇到错误即刻停止运行
+COMPOSE_FILE="docker-compose.build.yml"
 
 echo "==== 1. 拉取最新代码 ===="
-git pull origin main
+git pull origin main || { echo "❌ 拉取代码失败"; exit 1; }
 
 echo "==== 2. 停止并移除旧容器 ===="
-# 如果容器存在则停止并移除（避免冲突）
-docker-compose -f docker-compose.build.yml down
+# 先尝试正常 down，加 --remove-orphans 清理残留
+docker-compose -f "$COMPOSE_FILE" down --remove-orphans 2>/dev/null
+
+# 兜底：如果还有残留容器，强制停止并移除
+for container in cashbook4_local cashbook_db_local; do
+  if docker ps -aq -f name="^${container}$" | grep -q .; then
+    echo "强制清理残留容器: $container"
+    docker stop "$container" 2>/dev/null
+    docker rm -f "$container" 2>/dev/null
+  fi
+done
+
+# 兜底：清理可能残留的网络
+docker network ls --format '{{.Name}}' | grep cashbook | while read net; do
+  docker network rm "$net" 2>/dev/null && echo "已清理网络: $net"
+done
 
 echo "==== 3. 重新构建镜像并启动容器 ===="
-# `--build` 确保根据最新代码构建镜像，`-d` 后台运行
-docker-compose -f docker-compose.build.yml up -d --build
+docker-compose -f "$COMPOSE_FILE" up -d --build || { echo "❌ 构建启动失败"; exit 1; }
 
 echo "==== 4. 清理无用（悬空）的镜像以释放空间 ===="
 docker image prune -f
 
-echo "✅ 部署完成！您可以通过下面的命令查看日志："
-echo "docker-compose -f docker-compose.build.yml logs -f main"
+echo "==== 5. 等待服务启动 ===="
+MAX_WAIT=30
+for i in $(seq 1 $MAX_WAIT); do
+  if curl -s -o /dev/null -w '%{http_code}' http://localhost:9090/api/config | grep -q '200'; then
+    echo "✅ 部署完成！服务已就绪 (等待了 ${i}s)"
+    exit 0
+  fi
+  sleep 1
+done
+
+echo "⚠️  部署完成，但服务在 ${MAX_WAIT}s 内未响应，请检查日志："
+echo "docker-compose -f $COMPOSE_FILE logs -f main"
