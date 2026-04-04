@@ -14,7 +14,7 @@ services:
       NUXT_DATA_PATH: "/app/data"
       NUXT_AUTH_SECRET: "auth_secret" 
       NUXT_ADMIN_USERNAME: "admin"
-      NUXT_ADMIN_PASSWORD: "fb35e9343a1c095ce1c1d1eb6973dc570953159441c3ee315ecfefb6ed05f4cc"
+      NUXT_ADMIN_PASSWORD: "ab062b3df8b84086facf5b435839f95f5b49045e0a12749d79d7f166dcb4c9c6"
     ports:
       - 9090:9090
   db:
