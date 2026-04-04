@@ -60,7 +60,7 @@
         </div>
 
         <!-- 支出类型/收入类型 -->
-        <div v-show="isExpanded">
+        <div>
           <label
             class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"
           >
