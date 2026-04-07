@@ -17,12 +17,66 @@
                 &gt;
               </button>
             </h3>
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-ink-muted hidden md:inline">流水归属:</span>
-              <select v-model="selectedAttribution" class="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500">
-                <option value="">全部</option>
-                <option v-for="item in attributionList" :key="item" :value="item">{{ item }}</option>
-              </select>
+            <div class="flex items-center gap-4">
+              <!-- PC端图表类型切换 -->
+              <div class="hidden md:flex bg-surface-muted dark:bg-surface-darkMuted rounded-lg p-1">
+                <button
+                  @click="monthChartType = 'pie'"
+                  :class="[
+                    'px-3 py-1 text-sm font-medium rounded-md transition-colors',
+                    monthChartType === 'pie'
+                      ? 'bg-brand-600 text-white'
+                      : 'text-ink-muted hover:text-ink-primary dark:hover:text-ink-onDark',
+                  ]"
+                >
+                  饼图
+                </button>
+                <button
+                  @click="monthChartType = 'bar'"
+                  :class="[
+                    'px-3 py-1 text-sm font-medium rounded-md transition-colors',
+                    monthChartType === 'bar'
+                      ? 'bg-brand-600 text-white'
+                      : 'text-ink-muted hover:text-ink-primary dark:hover:text-ink-onDark',
+                  ]"
+                >
+                  柱图
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-ink-muted hidden md:inline">流水归属:</span>
+                <select v-model="selectedAttribution" class="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500">
+                  <option value="">全部</option>
+                  <option v-for="item in attributionList" :key="item" :value="item">{{ item }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <!-- 移动端图表类型切换 - 独立行居中 -->
+          <div class="flex md:hidden justify-center mb-4">
+            <div class="flex bg-surface-muted dark:bg-surface-darkMuted rounded-lg p-1">
+              <button
+                @click="monthChartType = 'pie'"
+                :class="[
+                  'px-3 py-1 text-sm font-medium rounded-md transition-colors',
+                  monthChartType === 'pie'
+                    ? 'bg-brand-600 text-white'
+                    : 'text-ink-muted hover:text-ink-primary dark:hover:text-ink-onDark',
+                ]"
+              >
+                饼图
+              </button>
+              <button
+                @click="monthChartType = 'bar'"
+                :class="[
+                  'px-3 py-1 text-sm font-medium rounded-md transition-colors',
+                  monthChartType === 'bar'
+                    ? 'bg-brand-600 text-white'
+                    : 'text-ink-muted hover:text-ink-primary dark:hover:text-ink-onDark',
+                ]"
+              >
+                柱图
+              </button>
             </div>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
@@ -46,6 +100,22 @@
           <!-- 月度消费前十饼图 -->
           <div class="mt-4 border-t border-frame dark:border-frame-dark pt-4 w-full">
             <ChartsCommonPie
+              v-if="monthChartType === 'pie'"
+              :title="currentMonth + ' 消费类型前十'"
+              width="100%"
+              height="300px"
+              groupBy="industryType"
+              flowType="支出"
+              seriesName="消费类型"
+              :showLegend="true"
+              queryField="industryType"
+              :startDay="currentMonth + '-01'"
+              :endDay="currentMonth + '-31'"
+              :attribution="selectedAttribution || undefined"
+              :topN="10"
+            />
+            <ChartsCommonBar
+              v-if="monthChartType === 'bar'"
               :title="currentMonth + ' 消费类型前十'"
               width="100%"
               height="300px"
@@ -452,6 +522,7 @@ watch([selectedAttribution, currentMonth], () => {
 });
 
 // 图表类型切换状态
+const monthChartType = ref<"pie" | "bar">("pie");
 const expenseChartType = ref<"pie" | "bar">("pie");
 const incomeChartType = ref<"pie" | "bar">("pie");
 

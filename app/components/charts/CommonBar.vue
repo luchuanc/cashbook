@@ -80,6 +80,8 @@ interface Props {
   seriesName?: string; // 系列名称
   showLegend?: boolean; // 是否显示图例
   queryField?: string; // 点击时传递给FlowTable的查询字段名
+  attribution?: string; // 新增：归属过滤
+  topN?: number; // 新增：只展示前 N 条数据
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -96,6 +98,7 @@ const chartParam = ref<CommonChartQuery & { groupBy: string }>({
   endDay: props.endDay,
   flowType: props.flowType,
   groupBy: props.groupBy,
+  attribution: props.attribution,
 });
 
 const dataList: any[] = [];
@@ -211,6 +214,12 @@ const doQuery = (query: CommonChartQuery & { groupBy: string }) => {
           });
         }
 
+        // 截取前 N 条数据
+        if (props.topN && props.topN > 0) {
+          xAxisData.splice(props.topN);
+          dataList.splice(props.topN);
+        }
+
         // 重新渲染图表
         optionRef.value.xAxis.data = xAxisData;
         optionRef.value.series[0].data = dataList;
@@ -254,10 +263,11 @@ watch(showLegend, () => {
 
 // 监听 props 变化，更新 chartParam
 watch(
-  () => [props.startDay, props.endDay],
-  ([newStartDay, newEndDay]) => {
-    chartParam.value.startDay = newStartDay;
-    chartParam.value.endDay = newEndDay;
+  () => [props.startDay, props.endDay, props.attribution],
+  ([newStartDay, newEndDay, newAttribution]) => {
+    chartParam.value.startDay = newStartDay as string | undefined;
+    chartParam.value.endDay = newEndDay as string | undefined;
+    chartParam.value.attribution = newAttribution as string | undefined;
   }
 );
 
