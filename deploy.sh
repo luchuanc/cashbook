@@ -10,6 +10,25 @@ COMPOSE_FILE="docker-compose.build.yml"
 echo "==== 1. 拉取最新代码 ===="
 git pull origin main || { echo "❌ 拉取代码失败"; exit 1; }
 
+echo "==== 1.5. 检查 Gemini API Key ===="
+if ! grep -q "NUXT_GEMINI_API_KEY=" .env || grep -q 'NUXT_GEMINI_API_KEY=""' .env; then
+  echo "⚠️  检测到 NUXT_GEMINI_API_KEY 未配置或为空"
+  read -p "请输入你的 Gemini API Key (https://ai.google.dev): " API_KEY
+  if [ -z "$API_KEY" ]; then
+    echo "❌ API Key 为空，部署取消"
+    exit 1
+  fi
+  # 更新 .env 文件中的 API Key
+  if grep -q 'NUXT_GEMINI_API_KEY=' .env; then
+    sed -i.bak "s|NUXT_GEMINI_API_KEY=.*|NUXT_GEMINI_API_KEY=\"$API_KEY\"|" .env
+  else
+    echo "NUXT_GEMINI_API_KEY=\"$API_KEY\"" >> .env
+  fi
+  echo "✅ API Key 已保存到 .env 文件"
+else
+  echo "✅ Gemini API Key 已配置"
+fi
+
 echo "==== 2. 停止并移除旧容器 ===="
 # 先尝试正常 down，加 --remove-orphans 清理残留
 docker-compose -f "$COMPOSE_FILE" down --remove-orphans 2>/dev/null

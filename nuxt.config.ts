@@ -101,6 +101,7 @@ export default defineNuxtConfig({
     authSecret: "",
     adminUsername: "",
     adminPassword: "",
+    geminiApiKey: process.env.NUXT_GEMINI_API_KEY || "",
   },
 
   modules: [

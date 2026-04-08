@@ -130,6 +130,43 @@
               :topN="10"
             />
           </div>
+
+          <!-- AI 流水分析 -->
+          <div class="mt-4 border-t border-frame dark:border-frame-dark pt-4 w-full">
+            <h4 class="text-base font-semibold text-ink-primary dark:text-ink-onDark mb-3 flex items-center gap-2">
+              <span>✨ AI 流水分析</span>
+              <button
+                @click="fetchAIAnalysis"
+                :disabled="aiAnalysisLoading"
+                class="ml-auto text-sm px-3 py-1 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-300 text-white rounded-md transition-colors"
+              >
+                {{ aiAnalysisLoading ? '分析中...' : '重新分析' }}
+              </button>
+            </h4>
+            <div v-if="aiAnalysisLoading" class="flex items-center justify-center py-8">
+              <div class="animate-spin h-6 w-6 border-2 border-brand-600 border-t-transparent rounded-full mr-2"></div>
+              <span class="text-sm text-ink-muted">AI 分析中，请稍候...</span>
+            </div>
+            <div
+              v-else-if="aiAnalysisError"
+              class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4"
+            >
+              <p class="text-sm text-red-700 dark:text-red-300">
+                <span class="font-semibold">分析失败:</span> {{ aiAnalysisError }}
+              </p>
+            </div>
+            <div
+              v-else-if="aiAnalysis"
+              class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
+            >
+              <p class="text-sm text-ink-primary dark:text-ink-onDark leading-relaxed">
+                {{ aiAnalysis }}
+              </p>
+            </div>
+            <div v-else class="text-center py-8">
+              <p class="text-sm text-ink-muted mb-4">还未生成分析，点击"重新分析"按钮开始</p>
+            </div>
+          </div>
         </div>
 
         <div
@@ -517,8 +554,48 @@ const nextMonth = () => {
   currentMonth.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 };
 
+// AI 分析相关状态和逻辑
+const aiAnalysis = ref<string>("");
+const aiAnalysisLoading = ref(false);
+const aiAnalysisError = ref<string>("");
+
+const fetchAIAnalysis = async () => {
+  const bookId = localStorage.getItem("bookId");
+  if (!bookId) {
+    aiAnalysisError.value = "请先选择账本";
+    return;
+  }
+
+  aiAnalysisLoading.value = true;
+  aiAnalysisError.value = "";
+  aiAnalysis.value = "";
+
+  try {
+    const res = await doApi.post<{ analysis: string; month: string }>(
+      "api/entry/analytics/ai-analysis",
+      {
+        bookId,
+        month: currentMonth.value,
+      }
+    );
+    if (res && res.analysis) {
+      aiAnalysis.value = res.analysis;
+    } else {
+      aiAnalysisError.value = "获取分析结果失败";
+    }
+  } catch (err: any) {
+    aiAnalysisError.value =
+      err.message || "AI 分析请求失败，请检查网络或稍后重试";
+    console.error("AI 分析错误:", err);
+  } finally {
+    aiAnalysisLoading.value = false;
+  }
+};
+
 watch([selectedAttribution, currentMonth], () => {
   fetchMonthAnalysis();
+  aiAnalysis.value = ""; // 月份或分类变化时，清空旧的分析结果
+  aiAnalysisError.value = "";
 });
 
 // 图表类型切换状态
