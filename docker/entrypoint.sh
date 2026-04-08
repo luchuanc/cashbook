@@ -1,6 +1,6 @@
 #!/bin/sh
 echo "============================================="
-echo "欢迎使用 Cashbook"
+echo "欢迎使用 陆家账本"
 echo "============================================="
 # 打印环境信息
 echo "Starting application with Prisma database initialization..."

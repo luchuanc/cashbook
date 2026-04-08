@@ -4,7 +4,7 @@ import type { Options } from "swagger-jsdoc";
 const swaggerDefinition = {
   // openapi: "3.0.0",
   info: {
-    title: "Cashbook API",
+    title: "陆家账本 API",
     version: "4.3.13",
     description:
       "接口文档需要手动维护，因此不能保证完全正确，请以接口实际效果为准！",

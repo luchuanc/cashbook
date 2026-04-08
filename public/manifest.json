@@ -1,7 +1,7 @@
 {
-  "name": "Cashbook",
-  "short_name": "Cashbook",
-  "description": "Cashbook, 快速记账!",
+  "name": "陆家账本",
+  "short_name": "陆家账本",
+  "description": "陆家账本，快速记账!" ,
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
