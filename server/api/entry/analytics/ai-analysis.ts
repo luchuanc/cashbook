@@ -1,6 +1,6 @@
 import prisma from "~~/server/lib/prisma";
 import { success, error, getUserId } from "~~/server/utils/common";
-import { callGeminiAPI, buildAnalysisPrompt } from "~~/server/utils/gemini";
+import { callSupercomputingAPI, buildAnalysisPrompt } from "~~/server/utils/gemini";
 import type { H3Event } from "h3";
 
 /**
@@ -53,10 +53,10 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // 获取 API Key
     const config = useRuntimeConfig();
-    const apiKey = config.geminiApiKey as string;
+    const apiKey = config.supercomputingApiKey as string;
 
     if (!apiKey) {
-      console.error("Gemini API Key 未配置");
+      console.error("超算平台 API Key 未配置");
       return error("AI 分析功能未配置，请联系管理员");
     }
 
@@ -77,9 +77,9 @@ export default defineEventHandler(async (event: H3Event) => {
     // 获取月度统计数据
     const monthData = await getMonthAnalysisData(bookId, month, where);
 
-    // 构建提示词并调用 Gemini API
+    // 构建提示词并调用超算平台 API
     const prompt = buildAnalysisPrompt(monthData);
-    const analysis = await callGeminiAPI(prompt, apiKey);
+    const analysis = await callSupercomputingAPI(prompt, apiKey);
 
     // 返回分析结果
     return success({

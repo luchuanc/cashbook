@@ -1,55 +1,56 @@
 /**
- * Gemini API 工具函数
+ * 超算平台 API 工具函数
+ * OpenAI 兼容接口，用于调用 SCNet 平台上的大模型
  */
 
-interface GeminiRequestContent {
-  parts: {
-    text: string;
-  }[];
+interface Message {
+  role: "system" | "user" | "assistant";
+  content: string;
 }
 
-interface GeminiRequest {
-  contents: GeminiRequestContent[];
+interface SupercomputingRequest {
+  model: string;
+  messages: Message[];
+  stream?: boolean;
 }
 
-interface GeminiResponseCandidate {
-  content: {
-    parts: {
-      text: string;
-    }[];
-  };
-}
-
-interface GeminiResponse {
-  candidates: GeminiResponseCandidate[];
+interface SupercomputingResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
 }
 
 /**
- * 调用 Gemini API 生成内容
+ * 调用超算平台 API 生成内容
  * @param prompt - 提示词
- * @param apiKey - Gemini API Key
+ * @param apiKey - 超算平台 API Key
  * @returns 生成的文本
  */
-export const callGeminiAPI = async (
+export const callSupercomputingAPI = async (
   prompt: string,
   apiKey: string
 ): Promise<string> => {
   if (!apiKey) {
-    throw new Error("Gemini API Key 未配置");
+    throw new Error("超算平台 API Key 未配置");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const url = "https://api.scnet.cn/api/llm/v1/chat/completions";
 
-  const requestBody: GeminiRequest = {
-    contents: [
+  const requestBody: SupercomputingRequest = {
+    model: "DeepSeek-R1-Distill-Qwen-7B",
+    messages: [
       {
-        parts: [
-          {
-            text: prompt,
-          },
-        ],
+        role: "system",
+        content: "你是一个个人财务分析助手，提供专业的财务建议。",
+      },
+      {
+        role: "user",
+        content: prompt,
       },
     ],
+    stream: false,
   };
 
   try {
@@ -57,6 +58,7 @@ export const callGeminiAPI = async (
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(requestBody),
     });
@@ -64,26 +66,47 @@ export const callGeminiAPI = async (
     if (!response.ok) {
       const errorData = await response.text();
       throw new Error(
-        `Gemini API 请求失败: ${response.status} ${errorData}`
+        `超算平台 API 请求失败: ${response.status} ${errorData}`
       );
     }
 
-    const data: GeminiResponse = await response.json();
+    const data: any = await response.json();
+    
+    console.debug("超算平台 API 响应:", JSON.stringify(data, null, 2));
 
-    // 提取响应中的文本
-    if (
-      data.candidates &&
-      data.candidates[0] &&
-      data.candidates[0].content &&
-      data.candidates[0].content.parts &&
-      data.candidates[0].content.parts[0]
-    ) {
-      return data.candidates[0].content.parts[0].text;
+    // 提取响应中的文本 - 尝试多种格式兼容
+    let content = "";
+    if (data.choices && data.choices[0]) {
+      // OpenAI 标准格式
+      if (data.choices[0].message && data.choices[0].message.content) {
+        content = data.choices[0].message.content;
+      }
+      // 备选格式1: text 属性
+      else if (data.choices[0].text) {
+        content = data.choices[0].text;
+      }
+    }
+    
+    // 其他可能的格式
+    if (!content) {
+      if (data.result && typeof data.result === 'string') {
+        content = data.result;
+      } else if (data.data && typeof data.data === 'string') {
+        content = data.data;
+      }
     }
 
-    throw new Error("Gemini API 返回数据格式错误");
+    if (!content) {
+      console.error("超算平台 API 返回数据格式错误，完整响应:", JSON.stringify(data));
+      throw new Error(`超算平台 API 返回数据格式错误: ${JSON.stringify(data)}`);
+    }
+
+    // 过滤掉 <think>...</think> 标签（DeepSeek 模型的思考过程）
+    content = content.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+    
+    return content;
   } catch (error: any) {
-    console.error("Gemini API 调用失败:", error.message);
+    console.error("超算平台 API 调用失败:", error.message);
     throw error;
   }
 };
