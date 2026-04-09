@@ -366,7 +366,7 @@ const getAttributions = async () => {
 };
 getAttributions();
 
-onMounted(() => {
+onMounted(async () => {
   // console.log("flow", flow);
   if (flow) {
     flowEdit.value = { ...flow };
@@ -378,11 +378,27 @@ onMounted(() => {
     const day =
       (flow && (flow as any).day) || new Date().toISOString().split("T")[0];
     const bookId = localStorage.getItem("bookId") || "";
-    const defFlowType = localStorage.getItem(`defaultFlowType_${bookId}`) || "";
-    const defAttribution = localStorage.getItem(`defaultAttribution_${bookId}`) || "";
-    const defPayType = localStorage.getItem(`defaultPayType_${bookId}`) || "";
+    
+    let defFlowType = "";
+    let defAttribution = "";
+    let defPayType = "";
+
+    try {
+      if (bookId) {
+        const res = await doApi.post<any>("api/entry/book/getDefaultTypes", { bookId });
+        if (res) {
+          defFlowType = res.flowType || "";
+          defAttribution = res.attribution || "";
+          defPayType = res.payType || "";
+        }
+      }
+    } catch (e) {
+      console.error("获取默认类型失败", e);
+    }
     
     flowEdit.value = { flowType: defFlowType, attribution: defAttribution, payType: defPayType, day } as any;
+    // 数据更新后重新调一下联动
+    changeFlowTypes();
   } else if (flow) {
     flowEdit.value = { ...flow } as any;
     isExpanded.value = true; // 修改流水时默认展开所有选项

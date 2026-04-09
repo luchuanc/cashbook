@@ -96,9 +96,16 @@ const getAttributions = async () => {
 onMounted(async () => {
   const bookId = getBookId();
   if (bookId) {
-    defaultSettings.value.flowType = localStorage.getItem(`defaultFlowType_${bookId}`) || "";
-    defaultSettings.value.attribution = localStorage.getItem(`defaultAttribution_${bookId}`) || "";
-    defaultSettings.value.payType = localStorage.getItem(`defaultPayType_${bookId}`) || "";
+    try {
+      const res = await doApi.post<any>("api/entry/book/getDefaultTypes", { bookId });
+      if (res) {
+        defaultSettings.value.flowType = res.flowType || "";
+        defaultSettings.value.attribution = res.attribution || "";
+        defaultSettings.value.payType = res.payType || "";
+      }
+    } catch (e) {
+      console.error(e);
+    }
     
     // 初始化选项列表
     await getAttributions();
@@ -106,19 +113,26 @@ onMounted(async () => {
   }
 });
 
-const saveSettings = () => {
+const saveSettings = async () => {
   const bookId = getBookId();
   if (!bookId) {
     Alert.error("账本信息不存在，无法保存设置");
     return;
   }
-  localStorage.setItem(`defaultFlowType_${bookId}`, defaultSettings.value.flowType);
-  localStorage.setItem(`defaultAttribution_${bookId}`, defaultSettings.value.attribution);
-  localStorage.setItem(`defaultPayType_${bookId}`, defaultSettings.value.payType);
-  Alert.success("默认选项保存成功！");
+  try {
+    await doApi.post("api/entry/book/updateDefaultTypes", {
+      bookId,
+      flowType: defaultSettings.value.flowType,
+      attribution: defaultSettings.value.attribution,
+      payType: defaultSettings.value.payType
+    });
+    Alert.success("默认选项保存成功！");
+  } catch (e: any) {
+    Alert.error("保存失败：" + (e.message || "未知错误"));
+  }
 };
 
-const clearSettings = () => {
+const clearSettings = async () => {
   const bookId = getBookId();
   if (!bookId) return;
   
@@ -126,9 +140,16 @@ const clearSettings = () => {
   defaultSettings.value.attribution = "";
   defaultSettings.value.payType = "";
   
-  localStorage.removeItem(`defaultFlowType_${bookId}`);
-  localStorage.removeItem(`defaultAttribution_${bookId}`);
-  localStorage.removeItem(`defaultPayType_${bookId}`);
-  Alert.success("配置已清除");
+  try {
+    await doApi.post("api/entry/book/updateDefaultTypes", {
+      bookId,
+      flowType: "",
+      attribution: "",
+      payType: ""
+    });
+    Alert.success("配置已清除");
+  } catch (e: any) {
+    Alert.error("清除失败：" + (e.message || "未知错误"));
+  }
 };
 </script>

@@ -45,6 +45,9 @@ export type BookMinAggregateOutputType = {
   shareKey: string | null
   userId: number | null
   budget: number | null
+  defaultFlowType: string | null
+  defaultAttribution: string | null
+  defaultPayType: string | null
   createDate: Date | null
 }
 
@@ -55,6 +58,9 @@ export type BookMaxAggregateOutputType = {
   shareKey: string | null
   userId: number | null
   budget: number | null
+  defaultFlowType: string | null
+  defaultAttribution: string | null
+  defaultPayType: string | null
   createDate: Date | null
 }
 
@@ -65,6 +71,9 @@ export type BookCountAggregateOutputType = {
   shareKey: number
   userId: number
   budget: number
+  defaultFlowType: number
+  defaultAttribution: number
+  defaultPayType: number
   createDate: number
   _all: number
 }
@@ -89,6 +98,9 @@ export type BookMinAggregateInputType = {
   shareKey?: true
   userId?: true
   budget?: true
+  defaultFlowType?: true
+  defaultAttribution?: true
+  defaultPayType?: true
   createDate?: true
 }
 
@@ -99,6 +111,9 @@ export type BookMaxAggregateInputType = {
   shareKey?: true
   userId?: true
   budget?: true
+  defaultFlowType?: true
+  defaultAttribution?: true
+  defaultPayType?: true
   createDate?: true
 }
 
@@ -109,6 +124,9 @@ export type BookCountAggregateInputType = {
   shareKey?: true
   userId?: true
   budget?: true
+  defaultFlowType?: true
+  defaultAttribution?: true
+  defaultPayType?: true
   createDate?: true
   _all?: true
 }
@@ -206,6 +224,9 @@ export type BookGroupByOutputType = {
   shareKey: string | null
   userId: number
   budget: number | null
+  defaultFlowType: string | null
+  defaultAttribution: string | null
+  defaultPayType: string | null
   createDate: Date
   _count: BookCountAggregateOutputType | null
   _avg: BookAvgAggregateOutputType | null
@@ -214,7 +235,7 @@ export type BookGroupByOutputType = {
   _max: BookMaxAggregateOutputType | null
 }
 
-type GetBookGroupByPayload<T extends BookGroupByArgs> = Prisma.PrismaPromise<
+export type GetBookGroupByPayload<T extends BookGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<BookGroupByOutputType, T['by']> &
       {
@@ -239,6 +260,9 @@ export type BookWhereInput = {
   shareKey?: Prisma.StringNullableFilter<"Book"> | string | null
   userId?: Prisma.IntFilter<"Book"> | number
   budget?: Prisma.FloatNullableFilter<"Book"> | number | null
+  defaultFlowType?: Prisma.StringNullableFilter<"Book"> | string | null
+  defaultAttribution?: Prisma.StringNullableFilter<"Book"> | string | null
+  defaultPayType?: Prisma.StringNullableFilter<"Book"> | string | null
   createDate?: Prisma.DateTimeFilter<"Book"> | Date | string
 }
 
@@ -249,6 +273,9 @@ export type BookOrderByWithRelationInput = {
   shareKey?: Prisma.SortOrderInput | Prisma.SortOrder
   userId?: Prisma.SortOrder
   budget?: Prisma.SortOrderInput | Prisma.SortOrder
+  defaultFlowType?: Prisma.SortOrderInput | Prisma.SortOrder
+  defaultAttribution?: Prisma.SortOrderInput | Prisma.SortOrder
+  defaultPayType?: Prisma.SortOrderInput | Prisma.SortOrder
   createDate?: Prisma.SortOrder
 }
 
@@ -262,6 +289,9 @@ export type BookWhereUniqueInput = Prisma.AtLeast<{
   shareKey?: Prisma.StringNullableFilter<"Book"> | string | null
   userId?: Prisma.IntFilter<"Book"> | number
   budget?: Prisma.FloatNullableFilter<"Book"> | number | null
+  defaultFlowType?: Prisma.StringNullableFilter<"Book"> | string | null
+  defaultAttribution?: Prisma.StringNullableFilter<"Book"> | string | null
+  defaultPayType?: Prisma.StringNullableFilter<"Book"> | string | null
   createDate?: Prisma.DateTimeFilter<"Book"> | Date | string
 }, "id">
 
@@ -272,6 +302,9 @@ export type BookOrderByWithAggregationInput = {
   shareKey?: Prisma.SortOrderInput | Prisma.SortOrder
   userId?: Prisma.SortOrder
   budget?: Prisma.SortOrderInput | Prisma.SortOrder
+  defaultFlowType?: Prisma.SortOrderInput | Prisma.SortOrder
+  defaultAttribution?: Prisma.SortOrderInput | Prisma.SortOrder
+  defaultPayType?: Prisma.SortOrderInput | Prisma.SortOrder
   createDate?: Prisma.SortOrder
   _count?: Prisma.BookCountOrderByAggregateInput
   _avg?: Prisma.BookAvgOrderByAggregateInput
@@ -290,6 +323,9 @@ export type BookScalarWhereWithAggregatesInput = {
   shareKey?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
   userId?: Prisma.IntWithAggregatesFilter<"Book"> | number
   budget?: Prisma.FloatNullableWithAggregatesFilter<"Book"> | number | null
+  defaultFlowType?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
+  defaultAttribution?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
+  defaultPayType?: Prisma.StringNullableWithAggregatesFilter<"Book"> | string | null
   createDate?: Prisma.DateTimeWithAggregatesFilter<"Book"> | Date | string
 }
 
@@ -299,6 +335,9 @@ export type BookCreateInput = {
   shareKey?: string | null
   userId: number
   budget?: number | null
+  defaultFlowType?: string | null
+  defaultAttribution?: string | null
+  defaultPayType?: string | null
   createDate?: Date | string
 }
 
@@ -309,6 +348,9 @@ export type BookUncheckedCreateInput = {
   shareKey?: string | null
   userId: number
   budget?: number | null
+  defaultFlowType?: string | null
+  defaultAttribution?: string | null
+  defaultPayType?: string | null
   createDate?: Date | string
 }
 
@@ -318,6 +360,9 @@ export type BookUpdateInput = {
   shareKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.IntFieldUpdateOperationsInput | number
   budget?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  defaultFlowType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultAttribution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultPayType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -328,6 +373,9 @@ export type BookUncheckedUpdateInput = {
   shareKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.IntFieldUpdateOperationsInput | number
   budget?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  defaultFlowType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultAttribution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultPayType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -338,6 +386,9 @@ export type BookCreateManyInput = {
   shareKey?: string | null
   userId: number
   budget?: number | null
+  defaultFlowType?: string | null
+  defaultAttribution?: string | null
+  defaultPayType?: string | null
   createDate?: Date | string
 }
 
@@ -347,6 +398,9 @@ export type BookUpdateManyMutationInput = {
   shareKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.IntFieldUpdateOperationsInput | number
   budget?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  defaultFlowType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultAttribution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultPayType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -357,6 +411,9 @@ export type BookUncheckedUpdateManyInput = {
   shareKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.IntFieldUpdateOperationsInput | number
   budget?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  defaultFlowType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultAttribution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultPayType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -367,6 +424,9 @@ export type BookCountOrderByAggregateInput = {
   shareKey?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   budget?: Prisma.SortOrder
+  defaultFlowType?: Prisma.SortOrder
+  defaultAttribution?: Prisma.SortOrder
+  defaultPayType?: Prisma.SortOrder
   createDate?: Prisma.SortOrder
 }
 
@@ -383,6 +443,9 @@ export type BookMaxOrderByAggregateInput = {
   shareKey?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   budget?: Prisma.SortOrder
+  defaultFlowType?: Prisma.SortOrder
+  defaultAttribution?: Prisma.SortOrder
+  defaultPayType?: Prisma.SortOrder
   createDate?: Prisma.SortOrder
 }
 
@@ -393,6 +456,9 @@ export type BookMinOrderByAggregateInput = {
   shareKey?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   budget?: Prisma.SortOrder
+  defaultFlowType?: Prisma.SortOrder
+  defaultAttribution?: Prisma.SortOrder
+  defaultPayType?: Prisma.SortOrder
   createDate?: Prisma.SortOrder
 }
 
@@ -419,6 +485,9 @@ export type BookSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   shareKey?: boolean
   userId?: boolean
   budget?: boolean
+  defaultFlowType?: boolean
+  defaultAttribution?: boolean
+  defaultPayType?: boolean
   createDate?: boolean
 }, ExtArgs["result"]["book"]>
 
@@ -429,6 +498,9 @@ export type BookSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   shareKey?: boolean
   userId?: boolean
   budget?: boolean
+  defaultFlowType?: boolean
+  defaultAttribution?: boolean
+  defaultPayType?: boolean
   createDate?: boolean
 }, ExtArgs["result"]["book"]>
 
@@ -439,6 +511,9 @@ export type BookSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   shareKey?: boolean
   userId?: boolean
   budget?: boolean
+  defaultFlowType?: boolean
+  defaultAttribution?: boolean
+  defaultPayType?: boolean
   createDate?: boolean
 }, ExtArgs["result"]["book"]>
 
@@ -449,10 +524,13 @@ export type BookSelectScalar = {
   shareKey?: boolean
   userId?: boolean
   budget?: boolean
+  defaultFlowType?: boolean
+  defaultAttribution?: boolean
+  defaultPayType?: boolean
   createDate?: boolean
 }
 
-export type BookOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "bookName" | "shareKey" | "userId" | "budget" | "createDate", ExtArgs["result"]["book"]>
+export type BookOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookId" | "bookName" | "shareKey" | "userId" | "budget" | "defaultFlowType" | "defaultAttribution" | "defaultPayType" | "createDate", ExtArgs["result"]["book"]>
 
 export type $BookPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Book"
@@ -464,6 +542,9 @@ export type $BookPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     shareKey: string | null
     userId: number
     budget: number | null
+    defaultFlowType: string | null
+    defaultAttribution: string | null
+    defaultPayType: string | null
     createDate: Date
   }, ExtArgs["result"]["book"]>
   composites: {}
@@ -894,6 +975,9 @@ export interface BookFieldRefs {
   readonly shareKey: Prisma.FieldRef<"Book", 'String'>
   readonly userId: Prisma.FieldRef<"Book", 'Int'>
   readonly budget: Prisma.FieldRef<"Book", 'Float'>
+  readonly defaultFlowType: Prisma.FieldRef<"Book", 'String'>
+  readonly defaultAttribution: Prisma.FieldRef<"Book", 'String'>
+  readonly defaultPayType: Prisma.FieldRef<"Book", 'String'>
   readonly createDate: Prisma.FieldRef<"Book", 'DateTime'>
 }
     
@@ -1071,6 +1155,11 @@ export type BookFindManyArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
    * Skip the first `n` Books.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of Books.
+   */
   distinct?: Prisma.BookScalarFieldEnum | Prisma.BookScalarFieldEnum[]
 }
 

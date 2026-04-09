@@ -33,13 +33,16 @@ model User {
 }
 
 model Book {
-  id         Int      @id @default(autoincrement())
-  bookId     String
-  bookName   String
-  shareKey   String? // 分享key
-  userId     Int
-  budget     Float? // 账本预算
-  createDate DateTime @default(now())
+  id                 Int      @id @default(autoincrement())
+  bookId             String
+  bookName           String
+  shareKey           String? // 分享key
+  userId             Int
+  budget             Float? // 账本预算
+  defaultFlowType    String?
+  defaultAttribution String?
+  defaultPayType     String?
+  createDate         DateTime @default(now())
 }
 
 model Flow {

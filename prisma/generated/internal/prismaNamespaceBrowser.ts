@@ -110,6 +110,9 @@ export const BookScalarFieldEnum = {
   shareKey: 'shareKey',
   userId: 'userId',
   budget: 'budget',
+  defaultFlowType: 'defaultFlowType',
+  defaultAttribution: 'defaultAttribution',
+  defaultPayType: 'defaultPayType',
   createDate: 'createDate'
 } as const
 
