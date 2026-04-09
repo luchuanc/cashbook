@@ -4,6 +4,7 @@ echo "欢迎使用 陆家账本"
 echo "============================================="
 # 打印环境信息
 echo "Starting application with Prisma database initialization..."
+export NODE_PATH=/usr/local/lib/node_modules
 
 # 循环等待数据库就绪并执行 migrate (解决 db 还没启动好导致 migrate 失败的问题)
 MAX_RETRIES=10
