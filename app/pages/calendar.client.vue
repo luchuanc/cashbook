@@ -506,6 +506,21 @@ const openPrefilledDialog = (draftFlow: Flow) => {
   showFlowEditDialog.value = true;
 };
 
+const createFlowDirectly = async (draftFlow: Flow) => {
+  const res = await doApi.post<Flow>("api/entry/flow/add", {
+    bookId: localStorage.getItem("bookId") || "",
+    day: draftFlow.day || dateFormater("YYYY-MM-dd", nowDate.value),
+    flowType: draftFlow.flowType || "支出",
+    industryType: draftFlow.industryType || "",
+    payType: draftFlow.payType || "",
+    name: draftFlow.name || "",
+    money: Number(draftFlow.money || 0),
+    description: draftFlow.description || "",
+    attribution: draftFlow.attribution || "",
+  });
+  return res;
+};
+
 const handleVoiceParse = async (voiceBlob: Blob) => {
   voiceState.value = "processing";
   voiceTip.value = "正在识别并分析...";
@@ -520,10 +535,34 @@ const handleVoiceParse = async (voiceBlob: Blob) => {
       transcript: string;
       draftFlow: Flow;
       needConfirm: boolean;
+      autoSubmitRequested: boolean;
     }>("api/entry/flow/voice/parse", formData);
 
-    openPrefilledDialog(parsed.draftFlow);
-    Alert.success(parsed.needConfirm ? "已识别，建议确认后保存" : "识别完成");
+    const allowAutoSubmit = !parsed.needConfirm && !!parsed.autoSubmitRequested;
+    if (!allowAutoSubmit) {
+      openPrefilledDialog(parsed.draftFlow);
+      Alert.success(
+        parsed.needConfirm
+          ? "已识别，建议确认后保存"
+          : "已识别，默认弹窗确认；如需自动写入请在语音中说“直接写入”"
+      );
+      return;
+    }
+
+    if (!parsed.draftFlow.money || Number(parsed.draftFlow.money) <= 0) {
+      openPrefilledDialog(parsed.draftFlow);
+      Alert.error("识别金额异常，已打开弹窗请确认");
+      return;
+    }
+
+    try {
+      const created = await createFlowDirectly(parsed.draftFlow);
+      addFlowSuccess(created);
+      Alert.success("语音记账成功，已自动写入");
+    } catch (createErr) {
+      openPrefilledDialog(parsed.draftFlow);
+      Alert.error("自动写入失败，已打开弹窗请确认");
+    }
   } catch (err: any) {
     Alert.error(err?.message || "语音识别失败");
   } finally {

@@ -122,6 +122,67 @@ const parseDateFromTranscript = (
   return "";
 };
 
+const detectAutoSubmitIntent = (text: string): boolean => {
+  if (!text) return false;
+  const normalized = text.replace(/\s+/g, "");
+  const deny = /(需要确认|先确认|请确认|别直接|不要直接|先看下|先看一眼)/;
+  if (deny.test(normalized)) return false;
+  const allow =
+    /(直接写入|直接保存|直接记账|直接提交|直接入账|无需确认|不用确认|不要确认|免确认|自动保存|自动提交)/;
+  return allow.test(normalized);
+};
+
+const normalizeBoolean = (value: any): boolean => {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    return ["true", "1", "yes", "y", "是"].includes(v);
+  }
+  return false;
+};
+
+const normalizeConfidence = (value: any): number => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.min(1, value));
+  }
+  if (typeof value === "string") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return Math.max(0, Math.min(1, n));
+  }
+  return 0;
+};
+
+const sanitizeName = (value: string): string => {
+  return value
+    .replace(/[，。；：,.!?！？]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 18);
+};
+
+const extractActionNameFromTranscript = (text: string): string => {
+  if (!text) return "";
+  const cleaned = text
+    .replace(/\s+/g, "")
+    .replace(/(今天|昨日|昨天|前天|大前天|明天|后天|大后天)/g, "")
+    .replace(/\d{1,2}月\d{1,2}[日号]?/g, "")
+    .replace(/\d{1,2}[日号]/g, "")
+    .replace(/\d+(\.\d+)?(元|块|人民币|rmb)/gi, "")
+    .replace(/(直接写入|直接保存|直接记账|直接提交|无需确认|不用确认|自动保存|自动提交)/g, "")
+    .replace(/(微信|支付宝|银行卡|信用卡|现金|云闪付)/g, "")
+    .replace(/(帮我|给我|我|记一笔|记账|记下|记录一下|记一下|入账|流水)/g, "")
+    .replace(/[，。；：,.!?！？]/g, "");
+
+  return cleaned.slice(0, 12).trim();
+};
+
+const includesByLooseText = (source: string, target: string): boolean => {
+  const s = source.replace(/\s+/g, "");
+  const t = target.replace(/\s+/g, "");
+  return !!t && s.includes(t);
+};
+
 export default defineEventHandler(async (event) => {
   try {
     const userId = await getUserId(event);
@@ -215,8 +276,10 @@ export default defineEventHandler(async (event) => {
   "industryType": "字符串",
   "payType": "字符串",
   "money": 数字,
-  "name": "字符串",
-  "description": "字符串"
+  "name": "2-10字，动作摘要短语",
+  "description": "字符串",
+  "autoSubmitIntent": true/false,
+  "autoSubmitConfidence": 0到1之间的小数
 }
 
 约束：
@@ -224,7 +287,10 @@ export default defineEventHandler(async (event) => {
 2. flowType 无法判断时用 "${book.defaultFlowType || "支出"}"
 3. money 必须是数字（元），例如 32.5
 4. description 保留原句关键信息，简短即可
-5. 不要返回其它字段
+5. autoSubmitIntent 仅当用户明确表达“直接写入/无需确认”等意图时才为 true
+6. autoSubmitConfidence 表示你对 autoSubmitIntent 的把握，范围 [0,1]
+7. name 必须能在原文中找到依据，不得杜撰品牌/地点/人物
+8. 不要返回其它字段
 
 可参考历史类型（可选）：
 - industryType: ${candidateIndustryTypes.map((i) => i.industryType).filter(Boolean).join("、") || "无"}
@@ -239,6 +305,13 @@ ${transcript}`;
         "你是记账结构化助手。只输出 JSON，不要任何解释。",
     });
     const llmJson = extractJson(llmRaw);
+    const ruleAutoSubmit = detectAutoSubmitIntent(transcript);
+    const llmAutoSubmit = normalizeBoolean(llmJson.autoSubmitIntent);
+    const llmAutoSubmitConfidence = normalizeConfidence(
+      llmJson.autoSubmitConfidence
+    );
+    const autoSubmitRequested =
+      ruleAutoSubmit && llmAutoSubmit && llmAutoSubmitConfidence >= 0.7;
 
     const parsedFlowType = FLOW_TYPES.has(String(llmJson.flowType))
       ? String(llmJson.flowType)
@@ -251,19 +324,27 @@ ${transcript}`;
       payType: String(llmJson.payType || "").trim() || (book.defaultPayType || ""),
       money: normalizeMoney(llmJson.money),
       attribution: book.defaultAttribution || "",
-      name: String(llmJson.name || "").trim(),
+      name: "",
       description:
         String(llmJson.description || "").trim() || `语音记账：${transcript}`,
     };
 
-    if (!draftFlow.name && transcript) {
-      draftFlow.name = transcript.slice(0, 20);
-    }
+    const llmName = sanitizeName(String(llmJson.name || ""));
+    const fallbackName = sanitizeName(extractActionNameFromTranscript(transcript));
+    draftFlow.name = includesByLooseText(transcript, llmName)
+      ? llmName
+      : fallbackName;
 
     return success({
       transcript,
       draftFlow,
       needConfirm: !draftFlow.money || !draftFlow.industryType,
+      autoSubmitRequested,
+      autoSubmitMeta: {
+        ruleAutoSubmit,
+        llmAutoSubmit,
+        llmAutoSubmitConfidence,
+      },
     });
   } catch (err: any) {
     console.error("语音记账解析失败:", err?.message || err);
