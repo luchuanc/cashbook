@@ -30,7 +30,11 @@ interface SupercomputingResponse {
  */
 export const callSupercomputingAPI = async (
   prompt: string,
-  apiKey: string
+  apiKey: string,
+  options?: {
+    systemPrompt?: string;
+    model?: string;
+  }
 ): Promise<string> => {
   if (!apiKey) {
     throw new Error("超算平台 API Key 未配置");
@@ -39,11 +43,12 @@ export const callSupercomputingAPI = async (
   const url = "https://api.scnet.cn/api/llm/v1/chat/completions";
 
   const requestBody: SupercomputingRequest = {
-    model: "DeepSeek-R1-Distill-Qwen-7B",
+    model: options?.model || "DeepSeek-R1-Distill-Qwen-7B",
     messages: [
       {
         role: "system",
-        content: "你是一个个人财务分析助手，提供专业的财务建议。",
+        content:
+          options?.systemPrompt || "你是一个个人财务分析助手，提供专业的财务建议。",
       },
       {
         role: "user",

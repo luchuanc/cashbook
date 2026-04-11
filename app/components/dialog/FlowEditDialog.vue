@@ -367,16 +367,10 @@ const getAttributions = async () => {
 getAttributions();
 
 onMounted(async () => {
-  // console.log("flow", flow);
-  if (flow) {
-    flowEdit.value = { ...flow };
-    if (flowEdit.value.day) {
-      flowEdit.value.day = flowEdit.value.day;
-    }
-  }
+  const incomingFlow = flow ? ({ ...flow } as any) : null;
   if (formTitle[0] === title) {
     const day =
-      (flow && (flow as any).day) || new Date().toISOString().split("T")[0];
+      (incomingFlow && incomingFlow.day) || new Date().toISOString().split("T")[0];
     const bookId = localStorage.getItem("bookId") || "";
     
     let defFlowType = "";
@@ -396,11 +390,18 @@ onMounted(async () => {
       console.error("获取默认类型失败", e);
     }
     
-    flowEdit.value = { flowType: defFlowType, attribution: defAttribution, payType: defPayType, day } as any;
+    // 语音记账等场景会传入预填值：优先用传入值，再兜底默认配置
+    flowEdit.value = {
+      flowType: defFlowType,
+      attribution: defAttribution,
+      payType: defPayType,
+      day,
+      ...(incomingFlow || {}),
+    } as any;
     // 数据更新后重新调一下联动
     changeFlowTypes();
-  } else if (flow) {
-    flowEdit.value = { ...flow } as any;
+  } else if (incomingFlow) {
+    flowEdit.value = incomingFlow as any;
     isExpanded.value = true; // 修改流水时默认展开所有选项
   }
   // 强制清除 id，确保新增不会走更新逻辑
