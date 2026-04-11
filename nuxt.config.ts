@@ -104,6 +104,10 @@ export default defineNuxtConfig({
     supercomputingApiKey: process.env.NUXT_SUPERCOMPUTING_API_KEY || "",
     supercomputingModel:
       process.env.NUXT_SUPERCOMPUTING_MODEL || "DeepSeek-R1-Distill-Qwen-7B",
+    supercomputingVoiceModel:
+      process.env.NUXT_SUPERCOMPUTING_VOICE_MODEL ||
+      process.env.NUXT_SUPERCOMPUTING_MODEL ||
+      "DeepSeek-R1-Distill-Qwen-7B",
     xunfeiAppId: process.env.NUXT_XUNFEI_APP_ID || "",
     xunfeiApiKey: process.env.NUXT_XUNFEI_API_KEY || "",
     xunfeiApiSecret: process.env.NUXT_XUNFEI_API_SECRET || "",

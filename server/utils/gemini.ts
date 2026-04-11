@@ -12,6 +12,13 @@ interface SupercomputingRequest {
   model: string;
   messages: Message[];
   stream?: boolean;
+  enable_thinking?: boolean;
+  max_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  response_format?: {
+    type: "text" | "json_object";
+  };
 }
 
 interface SupercomputingResponse {
@@ -34,6 +41,11 @@ export const callSupercomputingAPI = async (
   options?: {
     systemPrompt?: string;
     model?: string;
+    enableThinking?: boolean;
+    maxTokens?: number;
+    temperature?: number;
+    topP?: number;
+    responseFormat?: "text" | "json_object";
   }
 ): Promise<string> => {
   if (!apiKey) {
@@ -57,6 +69,21 @@ export const callSupercomputingAPI = async (
     ],
     stream: false,
   };
+  if (typeof options?.enableThinking === "boolean") {
+    requestBody.enable_thinking = options.enableThinking;
+  }
+  if (typeof options?.maxTokens === "number") {
+    requestBody.max_tokens = options.maxTokens;
+  }
+  if (typeof options?.temperature === "number") {
+    requestBody.temperature = options.temperature;
+  }
+  if (typeof options?.topP === "number") {
+    requestBody.top_p = options.topP;
+  }
+  if (options?.responseFormat) {
+    requestBody.response_format = { type: options.responseFormat };
+  }
 
   try {
     const response = await fetch(url, {

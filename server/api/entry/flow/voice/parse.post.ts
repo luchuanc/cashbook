@@ -234,7 +234,11 @@ export default defineEventHandler(async (event) => {
     const xunfeiApiKey = String(config.xunfeiApiKey || "");
     const xunfeiApiSecret = String(config.xunfeiApiSecret || "");
     const scApiKey = String(config.supercomputingApiKey || "");
-    const scModel = String(config.supercomputingModel || "DeepSeek-R1-Distill-Qwen-7B");
+    const scModel = String(
+      config.supercomputingVoiceModel ||
+        config.supercomputingModel ||
+        "DeepSeek-R1-Distill-Qwen-7B"
+    );
 
     if (!scApiKey) {
       return error("超算平台 API Key 未配置");
@@ -303,6 +307,10 @@ ${transcript}`;
       model: scModel,
       systemPrompt:
         "你是记账结构化助手。只输出 JSON，不要任何解释。",
+      enableThinking: false,
+      responseFormat: "json_object",
+      maxTokens: 320,
+      temperature: 0.2,
     });
     const llmJson = extractJson(llmRaw);
     const ruleAutoSubmit = detectAutoSubmitIntent(transcript);
