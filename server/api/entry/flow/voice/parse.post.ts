@@ -15,6 +15,18 @@ interface VoiceDraftFlow {
 }
 
 const FLOW_TYPES = new Set(["支出", "收入", "不计收支"]);
+const EXPENSE_INDUSTRY_TYPES = [
+  "餐饮",
+  "购物",
+  "交通",
+  "居住",
+  "娱乐",
+  "医疗",
+  "教育",
+  "人情",
+  "其他",
+];
+const EXPENSE_INDUSTRY_TYPE_SET = new Set(EXPENSE_INDUSTRY_TYPES);
 
 const extractJson = (text: string): any => {
   const start = text.indexOf("{");
@@ -183,6 +195,14 @@ const includesByLooseText = (source: string, target: string): boolean => {
   return !!t && s.includes(t);
 };
 
+const normalizeIndustryType = (flowType: string, value: any): string => {
+  const industryType = String(value || "").trim();
+  if (flowType === "支出") {
+    return EXPENSE_INDUSTRY_TYPE_SET.has(industryType) ? industryType : "其他";
+  }
+  return industryType;
+};
+
 export default defineEventHandler(async (event) => {
   try {
     const userId = await getUserId(event);
@@ -280,7 +300,7 @@ export default defineEventHandler(async (event) => {
   "industryType": "字符串",
   "payType": "字符串",
   "money": 数字,
-  "name": "2-10字，动作摘要短语",
+  "name": "2-10字，小类名称",
   "description": "字符串",
   "autoSubmitIntent": true/false,
   "autoSubmitConfidence": 0到1之间的小数
@@ -289,12 +309,13 @@ export default defineEventHandler(async (event) => {
 约束：
 1. day 无法判断时用 "${dayHint}"
 2. flowType 无法判断时用 "${book.defaultFlowType || "支出"}"
-3. money 必须是数字（元），例如 32.5
-4. description 保留原句关键信息，简短即可
-5. autoSubmitIntent 仅当用户明确表达“直接写入/无需确认”等意图时才为 true
-6. autoSubmitConfidence 表示你对 autoSubmitIntent 的把握，范围 [0,1]
-7. name 必须能在原文中找到依据，不得杜撰品牌/地点/人物
-8. 不要返回其它字段
+3. 如果 flowType="支出"，industryType 必须且只能是以下之一：${EXPENSE_INDUSTRY_TYPES.join("/")}
+4. money 必须是数字（元），例如 32.5
+5. description 保留原句关键信息，简短即可
+6. autoSubmitIntent 仅当用户明确表达“直接写入/无需确认”等意图时才为 true
+7. autoSubmitConfidence 表示你对 autoSubmitIntent 的把握，范围 [0,1]
+8. name 需要提炼成“支出小类/事项短语”（例如 早餐、奶茶、地铁、房租、水果），不得杜撰品牌/地点/人物
+9. 不要返回其它字段
 
 可参考历史类型（可选）：
 - industryType: ${candidateIndustryTypes.map((i) => i.industryType).filter(Boolean).join("、") || "无"}
@@ -328,7 +349,7 @@ ${transcript}`;
     const draftFlow: VoiceDraftFlow = {
       day: transcriptDay || normalizeDate(llmJson.day, dayHint),
       flowType: parsedFlowType,
-      industryType: String(llmJson.industryType || "").trim(),
+      industryType: normalizeIndustryType(parsedFlowType, llmJson.industryType),
       payType: String(llmJson.payType || "").trim() || (book.defaultPayType || ""),
       money: normalizeMoney(llmJson.money),
       attribution: book.defaultAttribution || "",
@@ -339,9 +360,10 @@ ${transcript}`;
 
     const llmName = sanitizeName(String(llmJson.name || ""));
     const fallbackName = sanitizeName(extractActionNameFromTranscript(transcript));
-    draftFlow.name = includesByLooseText(transcript, llmName)
-      ? llmName
-      : fallbackName;
+    const allowRefinedName =
+      !!llmName &&
+      (includesByLooseText(transcript, llmName) || draftFlow.flowType === "支出");
+    draftFlow.name = allowRefinedName ? llmName : fallbackName;
 
     return success({
       transcript,
