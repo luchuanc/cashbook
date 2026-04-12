@@ -324,15 +324,23 @@ export default defineEventHandler(async (event) => {
 原文：
 ${transcript}`;
 
+    const voiceLlmEnableThinking = false;
+    console.info(
+      `[voice-parse] start llm request, model=${scModel}, enableThinking=${voiceLlmEnableThinking}`
+    );
+    const llmStartAt = Date.now();
     const llmRaw = await callSupercomputingAPI(prompt, scApiKey, {
       model: scModel,
       systemPrompt:
         "你是记账结构化助手。只输出 JSON，不要任何解释。",
-      enableThinking: false,
+      enableThinking: voiceLlmEnableThinking,
       responseFormat: "json_object",
       maxTokens: 320,
       temperature: 0.2,
     });
+    console.info(
+      `[voice-parse] llm response received in ${Date.now() - llmStartAt}ms`
+    );
     const llmJson = extractJson(llmRaw);
     const ruleAutoSubmit = detectAutoSubmitIntent(transcript);
     const llmAutoSubmit = normalizeBoolean(llmJson.autoSubmitIntent);
