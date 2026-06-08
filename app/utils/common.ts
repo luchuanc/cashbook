@@ -5,7 +5,9 @@ export const miniFullscreen = () => {
 
 export const checkSignIn = () => {
   // console.log(useAuth().status.value);
-  return useCookie("Authorization").value ? true : false;
+  const storedAuthorization =
+    typeof window === "undefined" ? "" : localStorage.getItem("Authorization");
+  return useCookie("Authorization").value || storedAuthorization ? true : false;
 };
 
 export const getUUID = (num: number) => {

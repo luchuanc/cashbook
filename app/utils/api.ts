@@ -75,9 +75,17 @@ const intercepterResponse = <T>(res: Result<T>): T => {
   }
 };
 
+const getStoredAuthorization = () => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return localStorage.getItem("Authorization") || "";
+};
+
 const getHeaders = () => {
   return {
-    Authorization: useCookie("Authorization").value || "",
+    Authorization: useCookie("Authorization").value || getStoredAuthorization(),
     Admin: useCookie("Admin").value || "",
   };
 };
