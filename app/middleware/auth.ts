@@ -2,6 +2,14 @@ import { Alert } from "~/utils/alert";
 import type { Result, UserInfo } from "~/utils/model";
 import { useSystemStore } from "~/utils/store";
 
+const getStoredAuthorization = () => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return localStorage.getItem("Authorization") || "";
+};
+
 // 登录过滤
 export default defineNuxtRouteMiddleware(async (to, from) => {
   const systemStore = useSystemStore();
@@ -13,7 +21,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     {
       method: "get",
       headers: {
-        Authorization: useCookie("Authorization").value || "",
+        Authorization: useCookie("Authorization").value || getStoredAuthorization(),
       },
     }
   );

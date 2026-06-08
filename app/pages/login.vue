@@ -63,12 +63,17 @@ const validateLoginForm = () => {
 
 const login = async () => {
   if (validateLoginForm()) {
-    doApi.post("api/login", loginParam.value).then((res) => {
-      Alert.success("登录成功");
-      const target = fromUrl.value || "/";
-      // 使用硬跳转确保浏览器在新请求中正确携带刚设置的 Cookie
-      window.location.href = target;
-    });
+    doApi
+      .post<UserInfo & { token?: string }>("api/login", loginParam.value)
+      .then((res) => {
+        if (res.token) {
+          localStorage.setItem("Authorization", res.token);
+        }
+        Alert.success("登录成功");
+        const target = fromUrl.value || "/";
+        // 使用硬跳转确保浏览器在新请求中正确携带刚设置的 Cookie
+        window.location.href = target;
+      });
   }
 };
 

@@ -81,6 +81,7 @@ onUnmounted(() => {
 // Navigation methods
 const logout = () => {
   pageLoading.value = true;
+  localStorage.removeItem("Authorization");
   localStorage.removeItem("bookId");
   localStorage.removeItem("bookName");
   doApi.get("api/logout").then(() => {
