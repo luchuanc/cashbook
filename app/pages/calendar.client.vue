@@ -160,8 +160,8 @@
           class="voice-fab"
           :style="voiceFabStyle"
           :class="{
-            recording: voiceState === 'recording',
-            processing: voiceState === 'processing',
+            recording: voiceDisplayState === 'recording',
+            processing: voiceDisplayState === 'processing',
             dragging: dragState.isDragging,
           }"
           type="button"
@@ -170,7 +170,7 @@
           @pointerup.prevent="handleVoicePressEnd"
           @pointercancel.prevent="handleVoicePressEnd"
         >
-          <MicrophoneIcon v-if="voiceState !== 'processing'" class="w-6 h-6" />
+          <MicrophoneIcon v-if="voiceDisplayState !== 'processing'" class="w-6 h-6" />
           <SparklesIcon v-else class="w-6 h-6" />
         </button>
       </template>
@@ -197,6 +197,7 @@ import { daily } from "~/utils/apis";
 import { dateFormater } from "~/utils/common";
 import { doApi } from "~/utils/api";
 import { Alert } from "~/utils/alert";
+import { useVoiceRecorder } from "~/composables/useVoiceRecorder";
 import type { CommonChartQuery, MonthAnalysis, FlowQuery } from "~/utils/model";
 import type { Flow } from "~/utils/table";
 
@@ -257,13 +258,23 @@ const query = ref<FlowQuery>({
   pageSize: 20,
 });
 
-type VoiceState = "idle" | "recording" | "processing";
-const voiceState = ref<VoiceState>("idle");
+type VoiceDisplayState = "idle" | "recording" | "processing";
+const voiceDisplayState = computed<VoiceDisplayState>(() => {
+  if (voiceProcessing.value) return "processing";
+  if (isRecording.value) return "recording";
+  return "idle";
+});
+const voiceProcessing = ref(false);
 const voiceTip = ref("长按说话，松手记账");
 const recordStartTimer = ref<number | null>(null);
-const mediaStream = ref<MediaStream | null>(null);
-const mediaRecorder = ref<MediaRecorder | null>(null);
-const audioChunks = ref<Blob[]>([]);
+
+const {
+  isRecording,
+  startRecording,
+  stopRecording,
+  normalizeToPcm16kRaw,
+  cleanup: cleanupRecorder,
+} = useVoiceRecorder();
 const FAB_SIZE = 62;
 const FAB_MARGIN = 12;
 const fabX = ref(0);
@@ -426,71 +437,6 @@ const voiceTipStyle = computed(() => {
   };
 });
 
-const getBestRecorderMimeType = (): string | undefined => {
-  if (typeof MediaRecorder === "undefined") return undefined;
-  const candidates = [
-    "audio/webm;codecs=opus",
-    "audio/webm",
-    "audio/mp4",
-    "audio/ogg;codecs=opus",
-  ];
-  return candidates.find((type) => MediaRecorder.isTypeSupported(type));
-};
-
-const mergeToMono = (buffer: AudioBuffer): Float32Array => {
-  if (buffer.numberOfChannels === 1) return buffer.getChannelData(0);
-  const left = buffer.getChannelData(0);
-  const right = buffer.getChannelData(1);
-  const output = new Float32Array(buffer.length);
-  for (let i = 0; i < buffer.length; i++) {
-    output[i] = (left[i] + right[i]) / 2;
-  }
-  return output;
-};
-
-const resampleLinear = (
-  input: Float32Array,
-  fromRate: number,
-  toRate: number
-): Float32Array => {
-  if (fromRate === toRate) return input;
-  const ratio = fromRate / toRate;
-  const newLength = Math.round(input.length / ratio);
-  const output = new Float32Array(newLength);
-  for (let i = 0; i < newLength; i++) {
-    const index = i * ratio;
-    const before = Math.floor(index);
-    const after = Math.min(before + 1, input.length - 1);
-    const weight = index - before;
-    output[i] = input[before] * (1 - weight) + input[after] * weight;
-  }
-  return output;
-};
-
-const floatTo16BitPCM = (samples: Float32Array): Int16Array => {
-  const out = new Int16Array(samples.length);
-  for (let i = 0; i < samples.length; i++) {
-    const s = Math.max(-1, Math.min(1, samples[i]));
-    out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-  }
-  return out;
-};
-
-const normalizeToPcm16kRaw = async (rawBlob: Blob): Promise<Blob> => {
-  const arrayBuffer = await rawBlob.arrayBuffer();
-  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-  const audioCtx = new AudioCtx();
-  try {
-    const decoded = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
-    const mono = mergeToMono(decoded);
-    const sampled = resampleLinear(mono, decoded.sampleRate, 16000);
-    const pcm16 = floatTo16BitPCM(sampled);
-    return new Blob([pcm16.buffer], { type: "application/octet-stream" });
-  } finally {
-    await audioCtx.close();
-  }
-};
-
 const openPrefilledDialog = (draftFlow: Flow) => {
   dialogFormTitle.value = formTitle[0];
   selectedFlow.value = {
@@ -522,7 +468,7 @@ const createFlowDirectly = async (draftFlow: Flow) => {
 };
 
 const handleVoiceParse = async (voiceBlob: Blob) => {
-  voiceState.value = "processing";
+  voiceProcessing.value = true;
   voiceTip.value = "正在识别并分析...";
   try {
     const pcmBlob = await normalizeToPcm16kRaw(voiceBlob);
@@ -566,69 +512,9 @@ const handleVoiceParse = async (voiceBlob: Blob) => {
   } catch (err: any) {
     Alert.error(err?.message || "语音识别失败");
   } finally {
-    voiceState.value = "idle";
+    voiceProcessing.value = false;
     voiceTip.value = "长按说话，松手记账";
   }
-};
-
-const startRecord = async () => {
-  if (voiceState.value !== "idle") return;
-  if (typeof window === "undefined" || typeof navigator === "undefined") return;
-  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-    Alert.error("当前浏览器不支持录音");
-    return;
-  }
-  if (!localStorage.getItem("bookId")) {
-    Alert.error("请先选择账本");
-    return;
-  }
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaStream.value = stream;
-    audioChunks.value = [];
-
-    const mimeType = getBestRecorderMimeType();
-    mediaRecorder.value = mimeType
-      ? new MediaRecorder(stream, { mimeType })
-      : new MediaRecorder(stream);
-
-    mediaRecorder.value.ondataavailable = (event: BlobEvent) => {
-      if (event.data && event.data.size > 0) {
-        audioChunks.value.push(event.data);
-      }
-    };
-
-    mediaRecorder.value.onstop = async () => {
-      const audioBlob = new Blob(audioChunks.value, { type: "audio/webm" });
-      mediaStream.value?.getTracks().forEach((track) => track.stop());
-      mediaStream.value = null;
-      mediaRecorder.value = null;
-      if (audioBlob.size > 0) {
-        await handleVoiceParse(audioBlob);
-      } else {
-        voiceState.value = "idle";
-        voiceTip.value = "长按说话，松手记账";
-      }
-    };
-
-    mediaRecorder.value.start(200);
-    voiceState.value = "recording";
-    voiceTip.value = "录音中，松手结束";
-  } catch (err: any) {
-    Alert.error(err?.message || "麦克风权限申请失败");
-    voiceState.value = "idle";
-    voiceTip.value = "长按说话，松手记账";
-  }
-};
-
-const stopRecord = () => {
-  if (recordStartTimer.value) {
-    clearTimeout(recordStartTimer.value);
-    recordStartTimer.value = null;
-  }
-  if (voiceState.value !== "recording") return;
-  mediaRecorder.value?.stop();
 };
 
 const resetDragState = () => {
@@ -636,8 +522,8 @@ const resetDragState = () => {
   dragState.isDragging = false;
 };
 
-const handleVoicePressStart = (evt: PointerEvent) => {
-  if (voiceState.value === "processing") return;
+const handleVoicePressStart = async (evt: PointerEvent) => {
+  if (voiceDisplayState.value === "processing") return;
   const button = evt.currentTarget as HTMLElement | null;
   button?.setPointerCapture?.(evt.pointerId);
 
@@ -648,9 +534,19 @@ const handleVoicePressStart = (evt: PointerEvent) => {
   dragState.startFabY = fabY.value;
   dragState.isDragging = false;
 
-  if (voiceState.value === "idle") {
-    recordStartTimer.value = window.setTimeout(() => {
-      startRecord();
+  if (!isRecording.value && !voiceProcessing.value) {
+    recordStartTimer.value = window.setTimeout(async () => {
+      if (!localStorage.getItem("bookId")) {
+        Alert.error("请先选择账本");
+        recordStartTimer.value = null;
+        return;
+      }
+      try {
+        voiceTip.value = "录音中，松手结束";
+        await startRecording();
+      } catch {
+        // error already reported by composable
+      }
       recordStartTimer.value = null;
     }, 260);
   }
@@ -658,7 +554,7 @@ const handleVoicePressStart = (evt: PointerEvent) => {
 
 const handleVoicePointerMove = (evt: PointerEvent) => {
   if (dragState.pointerId !== evt.pointerId) return;
-  if (voiceState.value === "recording") return;
+  if (isRecording.value) return;
 
   const deltaX = evt.clientX - dragState.startClientX;
   const deltaY = evt.clientY - dragState.startClientY;
@@ -677,7 +573,7 @@ const handleVoicePointerMove = (evt: PointerEvent) => {
   clampFabPosition();
 };
 
-const handleVoicePressEnd = (evt: PointerEvent) => {
+const handleVoicePressEnd = async (evt: PointerEvent) => {
   if (dragState.pointerId !== evt.pointerId) return;
 
   if (recordStartTimer.value) {
@@ -692,7 +588,20 @@ const handleVoicePressEnd = (evt: PointerEvent) => {
   }
 
   resetDragState();
-  stopRecord();
+
+  if (!isRecording.value) return;
+
+  try {
+    voiceTip.value = "正在处理...";
+    const audioBlob = await stopRecording();
+    if (audioBlob.size > 0) {
+      await handleVoiceParse(audioBlob);
+    } else {
+      voiceTip.value = "长按说话，松手记账";
+    }
+  } catch {
+    voiceTip.value = "长按说话，松手记账";
+  }
 };
 
 const showMonthAnalysis = (month: string) => {
@@ -791,7 +700,7 @@ onMounted(() => {
     if (typeof window !== "undefined") {
       window.removeEventListener("resize", updateResponsive);
     }
-    mediaStream.value?.getTracks().forEach((track) => track.stop());
+    cleanupRecorder();
   };
 });
 </script>
