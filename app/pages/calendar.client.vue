@@ -547,7 +547,9 @@ const handleVoicePressStart = async (evt: PointerEvent) => {
       try {
         voiceTip.value = "录音中，松手结束";
         await startRecording();
-      } catch {
+        console.log("[voice] startRecording completed, isRecording:", isRecording.value);
+      } catch (err) {
+        console.error("[voice] startRecording failed:", err);
         // error already reported by composable
       }
       recordPending.value = false;
@@ -578,6 +580,7 @@ const handleVoicePointerMove = (evt: PointerEvent) => {
 };
 
 const handleVoicePressEnd = async (evt: PointerEvent) => {
+  console.log("[voice] pressEnd fired, pointerId:", evt.pointerId, "dragState.pointerId:", dragState.pointerId, "isRecording:", isRecording.value, "recordPending:", recordPending.value);
   if (dragState.pointerId !== evt.pointerId) return;
 
   if (recordStartTimer.value) {
@@ -610,7 +613,9 @@ const handleVoicePressEnd = async (evt: PointerEvent) => {
 
   try {
     voiceTip.value = "正在处理...";
+    console.log("[voice] calling stopRecording...");
     const audioBlob = await stopRecording();
+    console.log("[voice] stopRecording returned, size:", audioBlob.size);
     if (audioBlob.size > 0) {
       await handleVoiceParse(audioBlob);
     } else {
