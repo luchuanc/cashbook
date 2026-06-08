@@ -261,18 +261,19 @@ const query = ref<FlowQuery>({
 type VoiceDisplayState = "idle" | "recording" | "processing";
 const voiceDisplayState = computed<VoiceDisplayState>(() => {
   if (voiceProcessing.value) return "processing";
-  if (isRecording.value) return "recording";
+  if (voiceActive.value) return "recording";
   return "idle";
 });
 const voiceProcessing = ref(false);
+const voiceActive = ref(false);
 const voiceTip = ref("长按说话，松手记账");
 const recordStartTimer = ref<number | null>(null);
-const recordPending = ref(false);
 
 const {
   isRecording,
   startRecording,
   stopRecording,
+  cancelRecording,
   normalizeToPcm16kRaw,
   cleanup: cleanupRecorder,
 } = useVoiceRecorder();
@@ -535,24 +536,27 @@ const handleVoicePressStart = async (evt: PointerEvent) => {
   dragState.startFabY = fabY.value;
   dragState.isDragging = false;
 
-  if (!isRecording.value && !voiceProcessing.value) {
-    recordPending.value = true;
+  if (!voiceActive.value && !voiceProcessing.value) {
+    voiceActive.value = true;
     recordStartTimer.value = window.setTimeout(async () => {
       recordStartTimer.value = null;
       if (!localStorage.getItem("bookId")) {
         Alert.error("请先选择账本");
-        recordPending.value = false;
+        voiceActive.value = false;
         return;
       }
       try {
         voiceTip.value = "录音中，松手结束";
         await startRecording();
-        console.log("[voice] startRecording completed, isRecording:", isRecording.value);
+        // getUserMedia 可能在松手之后才返回，此时 voiceActive 已被清掉
+        if (!voiceActive.value) {
+          await cancelRecording();
+          voiceTip.value = "长按说话，松手记账";
+        }
       } catch (err) {
+        voiceActive.value = false;
         console.error("[voice] startRecording failed:", err);
-        // error already reported by composable
       }
-      recordPending.value = false;
     }, 260);
   }
 };
@@ -569,7 +573,7 @@ const handleVoicePointerMove = (evt: PointerEvent) => {
     if (recordStartTimer.value) {
       clearTimeout(recordStartTimer.value);
       recordStartTimer.value = null;
-      recordPending.value = false;
+      voiceActive.value = false;
     }
   }
 
@@ -580,7 +584,6 @@ const handleVoicePointerMove = (evt: PointerEvent) => {
 };
 
 const handleVoicePressEnd = async (evt: PointerEvent) => {
-  console.log("[voice] pressEnd fired, pointerId:", evt.pointerId, "dragState.pointerId:", dragState.pointerId, "isRecording:", isRecording.value, "recordPending:", recordPending.value);
   if (dragState.pointerId !== evt.pointerId) return;
 
   if (recordStartTimer.value) {
@@ -596,26 +599,18 @@ const handleVoicePressEnd = async (evt: PointerEvent) => {
 
   resetDragState();
 
-  if (!isRecording.value && !recordPending.value) return;
+  if (!voiceActive.value) return;
+  voiceActive.value = false;
 
-  // 如果录音还没真正开始（计时器未触发），清除计时器即可
-  if (!isRecording.value && recordPending.value) {
-    if (recordStartTimer.value) {
-      clearTimeout(recordStartTimer.value);
-      recordStartTimer.value = null;
-    }
-    recordPending.value = false;
+  // getUserMedia 可能还在等待权限，此时 isRecording 为 false
+  if (!isRecording.value) {
     voiceTip.value = "长按说话，松手记账";
     return;
   }
 
-  recordPending.value = false;
-
   try {
     voiceTip.value = "正在处理...";
-    console.log("[voice] calling stopRecording...");
     const audioBlob = await stopRecording();
-    console.log("[voice] stopRecording returned, size:", audioBlob.size);
     if (audioBlob.size > 0) {
       await handleVoiceParse(audioBlob);
     } else {
