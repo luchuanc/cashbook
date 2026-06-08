@@ -267,6 +267,7 @@ const voiceDisplayState = computed<VoiceDisplayState>(() => {
 const voiceProcessing = ref(false);
 const voiceTip = ref("长按说话，松手记账");
 const recordStartTimer = ref<number | null>(null);
+const recordPending = ref(false);
 
 const {
   isRecording,
@@ -535,10 +536,12 @@ const handleVoicePressStart = async (evt: PointerEvent) => {
   dragState.isDragging = false;
 
   if (!isRecording.value && !voiceProcessing.value) {
+    recordPending.value = true;
     recordStartTimer.value = window.setTimeout(async () => {
+      recordStartTimer.value = null;
       if (!localStorage.getItem("bookId")) {
         Alert.error("请先选择账本");
-        recordStartTimer.value = null;
+        recordPending.value = false;
         return;
       }
       try {
@@ -547,7 +550,7 @@ const handleVoicePressStart = async (evt: PointerEvent) => {
       } catch {
         // error already reported by composable
       }
-      recordStartTimer.value = null;
+      recordPending.value = false;
     }, 260);
   }
 };
@@ -564,6 +567,7 @@ const handleVoicePointerMove = (evt: PointerEvent) => {
     if (recordStartTimer.value) {
       clearTimeout(recordStartTimer.value);
       recordStartTimer.value = null;
+      recordPending.value = false;
     }
   }
 
@@ -589,7 +593,20 @@ const handleVoicePressEnd = async (evt: PointerEvent) => {
 
   resetDragState();
 
-  if (!isRecording.value) return;
+  if (!isRecording.value && !recordPending.value) return;
+
+  // 如果录音还没真正开始（计时器未触发），清除计时器即可
+  if (!isRecording.value && recordPending.value) {
+    if (recordStartTimer.value) {
+      clearTimeout(recordStartTimer.value);
+      recordStartTimer.value = null;
+    }
+    recordPending.value = false;
+    voiceTip.value = "长按说话，松手记账";
+    return;
+  }
+
+  recordPending.value = false;
 
   try {
     voiceTip.value = "正在处理...";
