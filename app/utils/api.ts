@@ -65,8 +65,14 @@ const intercepterResponse = <T>(res: Result<T>): T => {
       // 清除登陆状态（@sidebase/nuxt-auth框架）
       // useAuth().signOut();
       const route = useRoute();
+      const isMobileRoute = route.path === "/m" || route.path.startsWith("/m/");
+      const loginPath =
+        isMobileRoute ||
+        (typeof window !== "undefined" && getUiMode() === "mobile-v2")
+          ? "/m/login"
+          : "/login";
       navigateTo({
-        path: "/auth/login",
+        path: loginPath,
         query: { callbackUrl: route.fullPath },
       });
     }

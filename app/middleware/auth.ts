@@ -13,6 +13,12 @@ const getStoredAuthorization = () => {
 // 登录过滤
 export default defineNuxtRouteMiddleware(async (to, from) => {
   const systemStore = useSystemStore();
+  const isMobileRoute = to.path === "/m" || to.path.startsWith("/m/");
+  const loginPath =
+    isMobileRoute ||
+    (typeof window !== "undefined" && getUiMode() === "mobile-v2")
+      ? "/m/login"
+      : "/login";
 
   // 需要登陆的地址，校验登陆状态
   // const token = useCookie("Authorization").value;
@@ -30,11 +36,13 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return navigateTo({ path: "/500", query: { e: String(error.value) } });
   }
   if (!res.value?.d) {
-    localStorage.removeItem("Authorization");
-    localStorage.removeItem("bookName");
-    localStorage.removeItem("bookId");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("Authorization");
+      localStorage.removeItem("bookName");
+      localStorage.removeItem("bookId");
+    }
     Alert.error("用户异常，请重新登录！");
-    return navigateTo({ path: "/login", query: { callbackUrl: to.fullPath } });
+    return navigateTo({ path: loginPath, query: { callbackUrl: to.fullPath } });
   }
   // console.log(res);
   // 用户信息获取成功，正常跳转
@@ -45,7 +53,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     // console.log(400);
     // 跳转登录
     return navigateTo({
-      path: "/login",
+      path: loginPath,
       query: { callbackUrl: to.fullPath },
     });
   } else {

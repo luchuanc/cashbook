@@ -31,6 +31,12 @@ const systemStore = useSystemStore();
 const { globalUserInfo } = storeToRefs(systemStore);
 
 const showUserMenu = ref(false);
+const { switchUiMode } = useUiMode();
+
+const switchToMobileV2 = () => {
+  showUserMenu.value = false;
+  switchUiMode("mobile-v2");
+};
 </script>
 
 <template>
@@ -73,6 +79,13 @@ const showUserMenu = ref(false);
               class="px-2 py-1 md:px-4 md:py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-md transition-colors text-xs font-medium"
             >
               切换账本
+            </button>
+            <button
+              v-if="isMobile"
+              @click="switchToMobileV2"
+              class="px-2 py-1 bg-white text-brand-700 border border-brand-200 rounded-md transition-colors text-xs font-medium dark:bg-surface-dark dark:text-brand-300 dark:border-brand-800"
+            >
+              新版UI
             </button>
           </div>
         </div>
@@ -119,6 +132,12 @@ const showUserMenu = ref(false);
                     class="w-full px-4 py-2 text-left text-sm font-medium text-ink-secondary dark:text-ink-onDark hover:bg-surface-soft dark:hover:bg-surface-darkMuted transition-colors"
                   >
                     修改密码
+                  </button>
+                  <button
+                    @click="switchToMobileV2"
+                    class="w-full px-4 py-2 text-left text-sm font-medium text-brand-700 dark:text-brand-300 hover:bg-surface-soft dark:hover:bg-surface-darkMuted transition-colors"
+                  >
+                    切换到新版移动 UI
                   </button>
                   <hr class="my-1 border-frame-light dark:border-frame-dark" />
                   <button
