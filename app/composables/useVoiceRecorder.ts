@@ -12,8 +12,64 @@ export const useVoiceRecorder = (options?: VoiceRecorderOptions) => {
   let mediaRecorder: MediaRecorder | null = null;
   let audioChunks: Blob[] = [];
 
+  const nativeBridgeFromHost = (): NativeBridge | null => {
+    if (typeof window === "undefined" || !window.NativeBridgeHost) return null;
+
+    const invoke = async <T>(
+      method: keyof NativeBridgeHost,
+      args: unknown[] = []
+    ): Promise<NativeBridgeResult<T>> => {
+      const hostMethod = window.NativeBridgeHost?.[method];
+      if (typeof hostMethod !== "function") {
+        throw new Error("原生录音接口未就绪");
+      }
+
+      const raw = hostMethod.apply(window.NativeBridgeHost, args as never[]);
+      const result =
+        typeof raw === "string"
+          ? (JSON.parse(raw) as NativeBridgeResult<T>)
+          : (raw as NativeBridgeResult<T>);
+
+      if (!result?.success) {
+        const err = new Error(result?.message || "原生录音接口调用失败") as Error & {
+          code?: string;
+          result?: NativeBridgeResult<T>;
+        };
+        err.code = (result as NativeBridgeResult<T> & { code?: string })?.code;
+        err.result = result;
+        throw err;
+      }
+
+      return result;
+    };
+
+    return {
+      requestAudioPermission: () =>
+        invoke<NativeBridgePermissionResult>("requestAudioPermission"),
+      startRecording: (options?: { format?: "aac" | "wav" }) =>
+        invoke<NativeBridgeStartResult>("startRecording", [
+          JSON.stringify(options || {}),
+        ]),
+      stopRecording: () => invoke<NativeBridgeStopResult>("stopRecording"),
+      cancelRecording: () =>
+        invoke<{ message: string }>("cancelRecording"),
+      getRecordingState: () =>
+        invoke<NativeBridgeStateResult>("getRecordingState"),
+      onAudioPermissionResult: (cb: (detail: NativeBridgePermissionResult) => void) => {
+        window.addEventListener("audioPermissionResult", (e) => {
+          cb((e as CustomEvent<NativeBridgePermissionResult>).detail);
+        });
+      },
+    };
+  };
+
+  const getNativeBridge = (): NativeBridge | null => {
+    if (typeof window === "undefined") return null;
+    return window.NativeBridge || nativeBridgeFromHost();
+  };
+
   const hasNativeBridge = (): boolean => {
-    return typeof window !== "undefined" && !!window.NativeBridge;
+    return !!getNativeBridge();
   };
 
   const getBestRecorderMimeType = (): string | undefined => {
@@ -84,20 +140,58 @@ export const useVoiceRecorder = (options?: VoiceRecorderOptions) => {
 
   // --- NativeBridge recording ---
 
-  const startNativeRecording = async (): Promise<void> => {
-    const bridge = window.NativeBridge!;
+  const waitForAudioPermissionResult = (
+    bridge: NativeBridge,
+    timeoutMs = 30000
+  ): Promise<boolean> => {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = window.setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new Error("麦克风权限申请超时"));
+      }, timeoutMs);
+
+      bridge.onAudioPermissionResult((detail) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        resolve(!!detail.granted);
+      });
+    });
+  };
+
+  const ensureNativeAudioPermission = async (
+    bridge: NativeBridge
+  ): Promise<boolean> => {
     const perm = await bridge.requestAudioPermission();
-    if (!perm.data.granted) {
+    if (perm.data.granted) {
+      return true;
+    }
+    return waitForAudioPermissionResult(bridge);
+  };
+
+  const startNativeRecording = async (): Promise<void> => {
+    const bridge = getNativeBridge();
+    if (!bridge) {
+      throw new Error("原生录音接口未就绪");
+    }
+
+    const granted = await ensureNativeAudioPermission(bridge);
+    if (!granted) {
       throw new Error("麦克风权限被拒绝");
     }
-    const res = await bridge.startRecording();
+    const res = await bridge.startRecording({ format: "aac" });
     if (!res.success) {
-      throw new Error("原生录音启动失败");
+      throw new Error(res.message || "原生录音启动失败");
     }
   };
 
   const stopNativeRecording = async (): Promise<Blob> => {
-    const bridge = window.NativeBridge!;
+    const bridge = getNativeBridge();
+    if (!bridge) {
+      throw new Error("原生录音接口未就绪");
+    }
     const res = await bridge.stopRecording();
     const filePath = res.data.filePath;
     const fileUrl = `file://${filePath}`;
@@ -106,8 +200,10 @@ export const useVoiceRecorder = (options?: VoiceRecorderOptions) => {
   };
 
   const cancelNativeRecording = async (): Promise<void> => {
-    const bridge = window.NativeBridge!;
-    await bridge.cancelRecording();
+    const bridge = getNativeBridge();
+    if (bridge) {
+      await bridge.cancelRecording();
+    }
   };
 
   // --- Browser MediaRecorder recording ---

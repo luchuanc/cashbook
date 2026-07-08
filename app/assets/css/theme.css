@@ -52,25 +52,6 @@
   transition-duration: 300ms;
 }
 
-/* Custom scrollbar for better UX */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--color-bg-accent);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-text-accent);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary);
-}
-
 /* Focus styles for accessibility */
 *:focus-visible {
   outline: 2px solid var(--color-primary);
@@ -80,11 +61,6 @@
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
-}
-
-/* Prevent content shift when scrollbar appears */
-html {
-  scrollbar-gutter: stable;
 }
 
 /* Utility classes for theme colors */

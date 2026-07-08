@@ -74,6 +74,12 @@ const loadOptions = async () => {
   industryOptions.value = (industries || []).map((item: any) => item.industryType).filter(Boolean);
   payOptions.value = (pays || []).map((item: any) => item.payType).filter(Boolean);
   attributionOptions.value = attributions || [];
+  if (
+    defaultSettings.value.attribution &&
+    !attributionOptions.value.includes(defaultSettings.value.attribution)
+  ) {
+    attributionOptions.value = [defaultSettings.value.attribution, ...attributionOptions.value];
+  }
   form.value.industryType ||= industryOptions.value[0] || "";
   form.value.payType ||= defaultSettings.value.payType || payOptions.value[0] || "";
   form.value.attribution ||= defaultSettings.value.attribution || attributionOptions.value[0] || "";
@@ -214,9 +220,20 @@ const save = async (keepOpen = false) => {
         </div>
 
         <div class="mt-5 space-y-4">
-          <div>
-            <div class="mb-2 text-xs font-semibold text-slate-500">{{ form.flowType === '收入' ? '收入类型' : '支出类型' }}</div>
-            <div class="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+          <div class="rounded-xl bg-white p-3 ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
+            <label class="block">
+              <span class="text-xs font-semibold text-slate-500">{{ form.flowType === '收入' ? '收入类型' : '支出类型' }}</span>
+              <input
+                v-model.trim="form.industryType"
+                list="quick-flow-industry-types"
+                :placeholder="form.flowType === '收入' ? '输入收入类型，如工资' : '输入支出类型，如餐饮'"
+                class="mt-2 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+              />
+            </label>
+            <datalist id="quick-flow-industry-types">
+              <option v-for="item in industryOptions" :key="item" :value="item" />
+            </datalist>
+            <div v-if="industryOptions.length" class="no-scrollbar mt-2 flex gap-2 overflow-x-auto pb-1">
               <button
                 v-for="item in industryOptions"
                 :key="item"
@@ -228,9 +245,20 @@ const save = async (keepOpen = false) => {
               </button>
             </div>
           </div>
-          <div>
-            <div class="mb-2 text-xs font-semibold text-slate-500">{{ form.flowType === '收入' ? '收款方式' : '支付方式' }}</div>
-            <div class="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+          <div class="rounded-xl bg-white p-3 ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
+            <label class="block">
+              <span class="text-xs font-semibold text-slate-500">{{ form.flowType === '收入' ? '收款方式' : '支付方式' }}</span>
+              <input
+                v-model.trim="form.payType"
+                list="quick-flow-pay-types"
+                :placeholder="form.flowType === '收入' ? '输入收款方式，如银行卡' : '输入支付方式，如微信支付'"
+                class="mt-2 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+              />
+            </label>
+            <datalist id="quick-flow-pay-types">
+              <option v-for="item in payOptions" :key="item" :value="item" />
+            </datalist>
+            <div v-if="payOptions.length" class="no-scrollbar mt-2 flex gap-2 overflow-x-auto pb-1">
               <button
                 v-for="item in payOptions"
                 :key="item"
@@ -250,10 +278,15 @@ const save = async (keepOpen = false) => {
 
         <div v-if="expanded" class="mt-3 space-y-3">
           <input v-model="form.name" placeholder="名称，如早餐、工资" class="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-800 dark:bg-slate-900" />
-          <select v-model="form.attribution" class="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-800 dark:bg-slate-900">
-            <option value="">选择归属</option>
-            <option v-for="item in attributionOptions" :key="item" :value="item">{{ item }}</option>
-          </select>
+          <input
+            v-model.trim="form.attribution"
+            list="quick-flow-attributions"
+            placeholder="归属，如个人、家庭"
+            class="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-800 dark:bg-slate-900"
+          />
+          <datalist id="quick-flow-attributions">
+            <option v-for="item in attributionOptions" :key="item" :value="item" />
+          </datalist>
           <textarea v-model="form.description" rows="3" placeholder="备注" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900" />
         </div>
 

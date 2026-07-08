@@ -12,14 +12,20 @@ const route = useRoute();
 const items = [
   { title: "首页", path: "/m/calendar", icon: HomeIcon },
   { title: "流水", path: "/m/flows", icon: ListBulletIcon },
-  { title: "记账", path: "/m/calendar?quick=1", icon: PlusIcon, primary: true },
+  { title: "记账", path: "/m/calendar", icon: PlusIcon, primary: true },
   { title: "分析", path: "/m/analysis", icon: ChartBarIcon },
   { title: "我的", path: "/m/settings", icon: UserCircleIcon },
 ];
 
 const isActive = (path: string) => {
-  if (path.includes("?quick=1")) return false;
   return route.path === path;
+};
+
+const openQuickFlow = () => {
+  navigateTo({
+    path: "/m/calendar",
+    query: { quick: String(Date.now()) },
+  });
 };
 </script>
 
@@ -28,10 +34,10 @@ const isActive = (path: string) => {
     class="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px] border-t border-slate-200 bg-white/95 px-3 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/95"
   >
     <div class="grid grid-cols-5 items-end gap-1">
-      <NuxtLink
+      <button
         v-for="item in items"
         :key="item.title"
-        :to="item.path"
+        type="button"
         :class="[
           'flex h-12 flex-col items-center justify-center gap-0.5 rounded-lg text-xs font-medium transition-colors',
           item.primary
@@ -40,10 +46,11 @@ const isActive = (path: string) => {
               ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
               : 'text-slate-500 dark:text-slate-400',
         ]"
+        @click="item.primary ? openQuickFlow() : navigateTo(item.path)"
       >
         <component :is="item.icon" :class="item.primary ? 'h-7 w-7' : 'h-5 w-5'" />
         <span v-if="!item.primary">{{ item.title }}</span>
-      </NuxtLink>
+      </button>
     </div>
   </nav>
 </template>

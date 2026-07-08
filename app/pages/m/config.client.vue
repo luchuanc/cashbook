@@ -79,6 +79,12 @@ const loadDefaults = async () => {
   defaultSettings.value.attribution = defaults?.attribution || "";
   defaultSettings.value.payType = defaults?.payType || "";
   attributionOptions.value = attrs || [];
+  if (
+    defaultSettings.value.attribution &&
+    !attributionOptions.value.includes(defaultSettings.value.attribution)
+  ) {
+    attributionOptions.value = [defaultSettings.value.attribution, ...attributionOptions.value];
+  }
   await loadPayOptions();
 };
 
@@ -156,10 +162,15 @@ onMounted(() => {
         </label>
         <label class="block">
           <span class="text-sm font-semibold">默认流水归属</span>
-          <select v-model="defaultSettings.attribution" class="mt-2 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 dark:border-slate-800 dark:bg-slate-950">
-            <option value="">无默认值</option>
-            <option v-for="item in attributionOptions" :key="item" :value="item">{{ item }}</option>
-          </select>
+          <input
+            v-model.trim="defaultSettings.attribution"
+            list="mobile-default-attributions"
+            class="mt-2 h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 dark:border-slate-800 dark:bg-slate-950"
+            placeholder="输入归属，如个人、家庭"
+          />
+          <datalist id="mobile-default-attributions">
+            <option v-for="item in attributionOptions" :key="item" :value="item" />
+          </datalist>
         </label>
         <label class="block">
           <span class="text-sm font-semibold">默认支付方式</span>

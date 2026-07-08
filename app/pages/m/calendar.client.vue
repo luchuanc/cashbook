@@ -90,11 +90,7 @@ const calendarDays = computed(() => {
 });
 
 const formatCurrency = (value: number) => `¥${Number(value || 0).toFixed(2)}`;
-const formatSignedCurrency = (value: number) => {
-  const amount = Number(value || 0);
-  const sign = amount > 0 ? "+" : amount < 0 ? "-" : "";
-  return `${sign}¥${Math.abs(amount).toFixed(2)}`;
-};
+const formatUnsignedCurrency = (value: number) => `¥${Math.abs(Number(value || 0)).toFixed(2)}`;
 const formatCompactCurrency = (value: number) => {
   const amount = Number(value || 0);
   if (Math.abs(amount) >= 10000) return `${(amount / 10000).toFixed(1)}万`;
@@ -330,7 +326,7 @@ const stopVoice = async () => {
 watch(
   () => route.query.quick,
   (quick) => {
-    if (quick === "1") openQuickSheet();
+    if (quick) openQuickSheet();
   },
   { immediate: true }
 );
@@ -350,29 +346,29 @@ onBeforeUnmount(() => {
     <MobileV2PageHeader title="首页" :subtitle="bookName" />
 
     <section class="space-y-4 px-4">
-      <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
-        <div class="flex items-center justify-between px-4 py-3">
-          <button class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 text-lg font-semibold text-slate-500 dark:bg-slate-800" @click="changeMonth(-1)">‹</button>
-          <div class="text-base font-extrabold text-slate-950 dark:text-white">{{ currentMonthTitle }}</div>
-          <button class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 text-lg font-semibold text-slate-500 dark:bg-slate-800" @click="changeMonth(1)">›</button>
+      <div class="flex items-center justify-between px-1 py-1">
+        <button class="flex h-10 w-10 items-center justify-center rounded-full text-2xl font-semibold text-slate-900 dark:text-white" @click="changeMonth(-1)">‹</button>
+        <div class="text-2xl font-extrabold text-slate-950 dark:text-white">{{ currentMonthTitle }}</div>
+        <button class="flex h-10 w-10 items-center justify-center rounded-full text-2xl font-semibold text-slate-900 dark:text-white" @click="changeMonth(1)">›</button>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)] ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
+        <div class="grid grid-cols-3 divide-x divide-slate-100 text-center text-xs dark:divide-slate-800">
+          <div class="px-2">
+            <div class="text-slate-500">收入</div>
+            <div class="mt-1 font-extrabold tabular-nums text-emerald-600">{{ formatCurrency(monthStats.in) }}</div>
+          </div>
+          <div class="px-2">
+            <div class="text-slate-500">支出</div>
+            <div class="mt-1 font-extrabold tabular-nums text-rose-600">{{ formatCurrency(monthStats.out) }}</div>
+          </div>
+          <div class="px-2">
+            <div class="text-slate-500">结余</div>
+            <div :class="['mt-1 font-extrabold tabular-nums', balance >= 0 ? 'text-slate-950 dark:text-white' : 'text-rose-600']">{{ formatUnsignedCurrency(balance) }}</div>
+          </div>
         </div>
 
-        <div class="mx-4 grid grid-cols-3 rounded-lg bg-slate-50 px-3 py-2 text-xs dark:bg-slate-800/80">
-          <div>
-            <div class="text-slate-400">收入</div>
-            <div class="mt-0.5 font-bold tabular-nums text-emerald-600">{{ formatCompactCurrency(monthStats.in) }}</div>
-          </div>
-          <div>
-            <div class="text-slate-400">支出</div>
-            <div class="mt-0.5 font-bold tabular-nums text-rose-600">{{ formatCompactCurrency(monthStats.out) }}</div>
-          </div>
-          <div>
-            <div class="text-slate-400">结余</div>
-            <div :class="['mt-0.5 font-bold tabular-nums', balance >= 0 ? 'text-emerald-600' : 'text-amber-600']">{{ formatCompactCurrency(balance) }}</div>
-          </div>
-        </div>
-
-        <div v-if="budgetTotal > 0" class="mx-4 mt-3 rounded-lg bg-amber-50 px-3 py-2 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+        <div v-if="budgetTotal > 0" class="mt-4 rounded-xl bg-white px-3 py-3 text-amber-800 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-amber-200 dark:ring-slate-800">
           <div class="flex items-center justify-between text-[11px] font-semibold">
             <span>预算使用 {{ budgetPercent }}%</span>
             <span>{{ formatCurrency(budgetUsed) }} / {{ formatCurrency(budgetTotal) }}</span>
@@ -381,36 +377,40 @@ onBeforeUnmount(() => {
             <div class="h-full rounded-full bg-amber-500" :style="{ width: `${Math.min(budgetPercent, 100)}%` }" />
           </div>
         </div>
+      </div>
 
-        <div class="mt-3 grid grid-cols-7 border-y border-slate-100 bg-slate-50/70 text-center text-[11px] font-bold text-slate-400 dark:border-slate-800 dark:bg-slate-800/50">
+      <div class="overflow-hidden rounded-2xl bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.08)] ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
+        <div class="grid grid-cols-7 text-center text-[13px] font-bold text-slate-500 dark:text-slate-400">
           <span v-for="item in weekdays" :key="item" class="py-2">{{ item }}</span>
         </div>
-        <div class="grid grid-cols-7 bg-slate-100 dark:bg-slate-800">
+        <div class="grid grid-cols-7 auto-rows-[66px] gap-y-1">
           <button
             v-for="(item, index) in calendarDays"
             :key="`${item.date}-${index}`"
             type="button"
             :class="[
-              'relative min-h-[58px] bg-white px-1.5 py-1.5 text-left dark:bg-slate-900',
-              weekdayIndex(index) >= 5 && item.current ? 'bg-slate-50/80 dark:bg-slate-900/80' : '',
+              'relative h-full overflow-hidden rounded-xl px-1 py-1.5 text-center transition dark:bg-slate-900',
+              weekdayIndex(index) >= 5 && item.current ? 'bg-slate-50/60 dark:bg-slate-900/80' : '',
               item.date === selectedDay ? 'z-10 bg-emerald-50 ring-1 ring-inset ring-emerald-500 dark:bg-emerald-950/30' : '',
               !item.current ? 'pointer-events-none opacity-0' : '',
             ]"
             @click="selectDay(item.date)"
           >
-            <span :class="['block text-xs font-extrabold', item.date === selectedDay ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-700 dark:text-slate-200']">
+            <span :class="['absolute left-1/2 top-1.5 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full text-sm font-semibold leading-none', item.date === selectedDay ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/25' : 'text-slate-950 dark:text-slate-100']">
               {{ item.day || "" }}
             </span>
-            <span v-if="item.outSum" class="mt-1 block truncate text-[10px] font-bold leading-none tabular-nums text-rose-600">
-              -{{ formatCompactCurrency(item.outSum) }}
-            </span>
-            <span v-if="item.inSum" class="mt-1 block truncate text-[10px] font-bold leading-none tabular-nums text-emerald-600">
-              +{{ formatCompactCurrency(item.inSum) }}
+            <span class="absolute inset-x-1 bottom-1.5 flex flex-col items-center gap-0.5">
+              <span v-if="item.outSum" class="block max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none tabular-nums text-rose-600">
+                {{ formatCompactCurrency(item.outSum) }}
+              </span>
+              <span v-if="item.inSum" class="block max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none tabular-nums text-emerald-600">
+                {{ formatCompactCurrency(item.inSum) }}
+              </span>
             </span>
           </button>
         </div>
 
-        <div class="grid grid-cols-3 border-t border-slate-100 bg-slate-50/80 px-4 py-2 text-xs dark:border-slate-800 dark:bg-slate-800/40">
+        <div class="mt-3 grid grid-cols-3 border-t border-slate-100 pt-3 text-xs dark:border-slate-800">
           <div>
             <div class="text-slate-400">{{ selectedDayTitle }}支出</div>
             <div class="mt-0.5 font-extrabold tabular-nums text-rose-600">{{ formatCurrency(selectedDayStats.outSum) }}</div>
@@ -422,7 +422,7 @@ onBeforeUnmount(() => {
           <div>
             <div class="text-slate-400">净额</div>
             <div :class="['mt-0.5 font-extrabold tabular-nums', selectedDayStats.balance >= 0 ? 'text-emerald-600' : 'text-amber-600']">
-              {{ formatSignedCurrency(selectedDayStats.balance) }}
+              {{ formatUnsignedCurrency(selectedDayStats.balance) }}
             </div>
           </div>
         </div>

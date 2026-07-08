@@ -35,6 +35,15 @@ interface NativeBridge {
   onAudioPermissionResult(cb: (detail: NativeBridgePermissionResult) => void): void;
 }
 
+interface NativeBridgeHost {
+  requestAudioPermission(): string;
+  startRecording(optionsJson?: string): string;
+  stopRecording(): string;
+  cancelRecording(): string;
+  getRecordingState(): string;
+}
+
 declare interface Window {
   NativeBridge?: NativeBridge;
+  NativeBridgeHost?: NativeBridgeHost;
 }
