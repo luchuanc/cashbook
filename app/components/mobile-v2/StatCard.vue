@@ -9,7 +9,7 @@ defineProps<{
 <template>
   <div
     :class="[
-      'rounded-lg border p-3 shadow-sm',
+      'min-w-0 rounded-lg border p-3 shadow-sm',
       tone === 'income'
         ? 'border-emerald-100 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200'
         : tone === 'expense'
@@ -20,6 +20,6 @@ defineProps<{
     ]"
   >
     <div class="text-xs opacity-75">{{ label }}</div>
-    <div class="mt-1 truncate text-lg font-bold">{{ value }}</div>
+    <div class="mt-1 break-all text-lg font-bold leading-tight tabular-nums">{{ value }}</div>
   </div>
 </template>

@@ -32,6 +32,36 @@
   /* border-radius: 5px; */
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-sheet-fade-enter-active,
+.mobile-sheet-fade-leave-active {
+  transition: opacity 180ms ease;
+}
+
+.mobile-sheet-fade-enter-from,
+.mobile-sheet-fade-leave-to {
+  opacity: 0;
+}
+
+.mobile-sheet-slide-enter-active,
+.mobile-sheet-slide-leave-active {
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease;
+}
+
+.mobile-sheet-slide-enter-from,
+.mobile-sheet-slide-leave-to {
+  transform: translateY(24px);
+  opacity: 0;
+}
+
 .top-index {
   z-index: 999;
 }

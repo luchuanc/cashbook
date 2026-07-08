@@ -1,6 +1,7 @@
 export type UiMode = "legacy" | "mobile-v2";
 
 export const UI_MODE_KEY = "cashbook.ui.mode";
+const UI_MODE_MAX_AGE = 60 * 60 * 24 * 365;
 
 const legacyToMobileMap: Record<string, string> = {
   "/": "/m/calendar",
@@ -33,14 +34,36 @@ const normalizePath = (path: string) => {
 
 export const getUiMode = (): UiMode => {
   if (typeof window === "undefined") return "legacy";
-  return localStorage.getItem(UI_MODE_KEY) === "mobile-v2"
+  const storedMode = getUiModeStorage() || getUiModeCookie();
+  return storedMode === "mobile-v2"
     ? "mobile-v2"
     : "legacy";
 };
 
+const getUiModeStorage = () => {
+  try {
+    return localStorage.getItem(UI_MODE_KEY) || "";
+  } catch {
+    return "";
+  }
+};
+
+const getUiModeCookie = () => {
+  if (typeof document === "undefined") return "";
+  const cookie = document.cookie
+    .split("; ")
+    .find((item) => item.startsWith(`${UI_MODE_KEY}=`));
+  return cookie ? decodeURIComponent(cookie.split("=").slice(1).join("=")) : "";
+};
+
 export const setUiMode = (mode: UiMode) => {
   if (typeof window === "undefined") return;
-  localStorage.setItem(UI_MODE_KEY, mode);
+  try {
+    localStorage.setItem(UI_MODE_KEY, mode);
+  } catch {
+    // Cookie fallback handles embedded WebView environments with restricted storage.
+  }
+  document.cookie = `${UI_MODE_KEY}=${encodeURIComponent(mode)}; path=/; max-age=${UI_MODE_MAX_AGE}; SameSite=Lax`;
 };
 
 export const getPairedUiPath = (mode: UiMode, path: string) => {

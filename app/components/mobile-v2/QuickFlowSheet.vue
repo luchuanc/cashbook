@@ -20,6 +20,11 @@ const hydrating = ref(false);
 const industryOptions = ref<string[]>([]);
 const payOptions = ref<string[]>([]);
 const attributionOptions = ref<string[]>([]);
+const defaultSettings = ref({
+  flowType: "",
+  attribution: "",
+  payType: "",
+});
 
 const createDefaultForm = () => ({
   day: new Date().toISOString().slice(0, 10),
@@ -40,12 +45,22 @@ const amountToneClass = computed(() => {
   return "text-slate-700";
 });
 
+const loadDefaultSettings = async (bookId: string) => {
+  const defaults = await doApi.post<any>("api/entry/book/getDefaultTypes", { bookId });
+  defaultSettings.value = {
+    flowType: defaults?.flowType || "",
+    attribution: defaults?.attribution || "",
+    payType: defaults?.payType || "",
+  };
+};
+
 const loadOptions = async () => {
   const bookId = localStorage.getItem("bookId");
   if (!bookId) {
     industryOptions.value = [];
     payOptions.value = [];
     attributionOptions.value = [];
+    defaultSettings.value = { flowType: "", attribution: "", payType: "" };
     return;
   }
 
@@ -60,22 +75,31 @@ const loadOptions = async () => {
   payOptions.value = (pays || []).map((item: any) => item.payType).filter(Boolean);
   attributionOptions.value = attributions || [];
   form.value.industryType ||= industryOptions.value[0] || "";
-  form.value.payType ||= payOptions.value[0] || "";
-  form.value.attribution ||= attributionOptions.value[0] || "";
+  form.value.payType ||= defaultSettings.value.payType || payOptions.value[0] || "";
+  form.value.attribution ||= defaultSettings.value.attribution || attributionOptions.value[0] || "";
 };
 
 const syncFormFromProps = async () => {
   hydrating.value = true;
+  const bookId = localStorage.getItem("bookId");
+  if (bookId) {
+    await loadDefaultSettings(bookId);
+  }
+  const defaults = defaultSettings.value;
+  const prefill = props.prefill || {};
   form.value = {
     ...createDefaultForm(),
     day: props.initialDay || new Date().toISOString().slice(0, 10),
-    ...(props.prefill || {}),
+    flowType: prefill.flowType || defaults.flowType || "支出",
+    payType: prefill.payType || defaults.payType || "",
+    attribution: prefill.attribution || defaults.attribution || "",
+    ...prefill,
   };
   if (form.value.money !== undefined && form.value.money !== null && form.value.money !== "") {
     form.value.money = Number(form.value.money);
   }
   expanded.value = Boolean(
-    form.value.attribution || form.value.name || form.value.description
+    form.value.name || form.value.description
   );
   await loadOptions();
   hydrating.value = false;
@@ -140,11 +164,13 @@ const save = async (keepOpen = false) => {
 
 <template>
   <Teleport to="body">
-    <div v-if="show" class="fixed inset-0 z-50 mx-auto max-w-[430px] bg-slate-950/50" @click="emit('close')">
-      <section
-        class="absolute inset-x-0 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-2xl bg-[#FAFAF7] p-4 pb-[max(env(safe-area-inset-bottom),16px)] shadow-2xl dark:bg-slate-950"
-        @click.stop
-      >
+    <Transition name="mobile-sheet-fade">
+      <div v-if="show" class="fixed inset-0 z-50 mx-auto max-w-[430px] bg-slate-950/50" @click="emit('close')">
+        <Transition name="mobile-sheet-slide" appear>
+          <section
+            class="absolute inset-x-0 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-2xl bg-[#FAFAF7] p-4 pb-[max(env(safe-area-inset-bottom),16px)] shadow-2xl dark:bg-slate-950"
+            @click.stop
+          >
         <div class="mx-auto mb-3 h-1 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
         <div class="mb-4 flex items-center justify-between">
           <h2 class="text-lg font-bold text-slate-950 dark:text-white">记一笔</h2>
@@ -190,7 +216,7 @@ const save = async (keepOpen = false) => {
         <div class="mt-5 space-y-4">
           <div>
             <div class="mb-2 text-xs font-semibold text-slate-500">{{ form.flowType === '收入' ? '收入类型' : '支出类型' }}</div>
-            <div class="flex gap-2 overflow-x-auto pb-1">
+            <div class="no-scrollbar flex gap-2 overflow-x-auto pb-1">
               <button
                 v-for="item in industryOptions"
                 :key="item"
@@ -204,7 +230,7 @@ const save = async (keepOpen = false) => {
           </div>
           <div>
             <div class="mb-2 text-xs font-semibold text-slate-500">{{ form.flowType === '收入' ? '收款方式' : '支付方式' }}</div>
-            <div class="flex gap-2 overflow-x-auto pb-1">
+            <div class="no-scrollbar flex gap-2 overflow-x-auto pb-1">
               <button
                 v-for="item in payOptions"
                 :key="item"
@@ -235,7 +261,9 @@ const save = async (keepOpen = false) => {
           <button type="button" class="h-12 rounded-lg bg-slate-900 text-sm font-bold text-white disabled:opacity-60" :disabled="saving" @click="save(false)">保存</button>
           <button type="button" class="h-12 rounded-lg bg-emerald-600 text-sm font-bold text-white disabled:opacity-60" :disabled="saving" @click="save(true)">保存并继续</button>
         </div>
-      </section>
-    </div>
+          </section>
+        </Transition>
+      </div>
+    </Transition>
   </Teleport>
 </template>

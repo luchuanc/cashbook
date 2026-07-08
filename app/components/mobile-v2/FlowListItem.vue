@@ -35,6 +35,9 @@ const amountText = computed(() => {
         {{ item.industryType || "-" }} · {{ item.payType || "-" }} · {{ item.attribution || "未归属" }}
       </div>
     </div>
-    <div :class="['shrink-0 text-right text-sm font-bold', amountClass]">{{ amountText }}</div>
+    <div class="flex shrink-0 items-center gap-2">
+      <div :class="['max-w-[112px] break-all text-right text-sm font-bold leading-tight tabular-nums', amountClass]">{{ amountText }}</div>
+      <slot name="action" />
+    </div>
   </div>
 </template>

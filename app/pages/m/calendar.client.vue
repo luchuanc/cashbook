@@ -306,10 +306,9 @@ onBeforeUnmount(() => {
           <button class="h-9 rounded-lg bg-slate-100 px-3 text-sm font-semibold dark:bg-slate-800" @click="changeMonth(1)">下月</button>
         </div>
 
-        <div class="mt-4 grid grid-cols-3 gap-2">
+        <div class="mt-4 grid grid-cols-2 gap-2">
           <MobileV2StatCard label="本月收入" :value="formatCurrency(monthStats.in)" tone="income" />
           <MobileV2StatCard label="本月支出" :value="formatCurrency(monthStats.out)" tone="expense" />
-          <MobileV2StatCard label="结余" :value="formatCurrency(balance)" :tone="balance >= 0 ? 'income' : 'warning'" />
         </div>
 
         <div class="mt-4 rounded-lg bg-amber-50 p-3 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">

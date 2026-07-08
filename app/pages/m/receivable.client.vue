@@ -141,7 +141,7 @@ onMounted(loadData);
           <input v-model="searchName" class="h-11 min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm dark:border-slate-800 dark:bg-slate-950" placeholder="搜索待收款名称" @keyup.enter="loadData" />
           <button class="h-11 rounded-lg bg-emerald-600 px-3 text-sm font-bold text-white" @click="openDialog()">添加</button>
         </div>
-        <div class="mt-3 flex gap-2 overflow-x-auto">
+        <div class="no-scrollbar mt-3 flex gap-2 overflow-x-auto">
           <button
             v-for="item in [{t:'全部',v:''},{t:'未收款',v:'0'},{t:'已收款',v:'1'},{t:'已放弃',v:'-2'}]"
             :key="item.v"

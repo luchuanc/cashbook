@@ -25,6 +25,13 @@ const balance = computed(() => {
 
 const formatCurrency = (value: number | string) => `¥${Number(value || 0).toFixed(2)}`;
 
+const sortByExpenseAmount = (rows: CommonChartData[], limit?: number) => {
+  const sorted = [...(rows || [])].sort(
+    (a: any, b: any) => Number(b.outSum || 0) - Number(a.outSum || 0)
+  );
+  return limit ? sorted.slice(0, limit) : sorted;
+};
+
 const loadData = async () => {
   const bookId = localStorage.getItem("bookId");
   if (!bookId) {
@@ -50,7 +57,7 @@ const loadData = async () => {
         groupBy: "industryType",
         flowType: "支出",
         queryField: "industryType",
-        topN: 8,
+        topN: 10,
       }),
       doApi.post<CommonChartData[]>("api/entry/analytics/common", {
         bookId,
@@ -63,8 +70,8 @@ const loadData = async () => {
       }),
     ]);
     monthData.value = month || {};
-    expenseTop.value = expense || [];
-    payTop.value = pay || [];
+    expenseTop.value = sortByExpenseAmount(expense || [], 10);
+    payTop.value = sortByExpenseAmount(pay || [], 6);
   } finally {
     loading.value = false;
   }
