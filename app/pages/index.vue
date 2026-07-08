@@ -5,7 +5,9 @@ definePageMeta({
   auth: ["auth"],
 });
 onMounted(() => {
-  navigateTo("/calendar");
+  navigateTo(getUiMode() === "mobile-v2" ? "/m/calendar" : "/calendar", {
+    replace: true,
+  });
 });
 </script>
 

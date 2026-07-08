@@ -95,7 +95,9 @@ export default defineNuxtConfig({
   //   url: "/api/openapi.json",
   // },
   runtimeConfig: {
-    public: {},
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || "",
+    },
     appVersion: "",
     dataPath: "",
     authSecret: "",

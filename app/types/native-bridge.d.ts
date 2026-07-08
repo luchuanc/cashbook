@@ -20,6 +20,13 @@ interface NativeBridgeStopResult {
   format: string;
 }
 
+interface NativeBridgeRecordingFileResult {
+  fileName: string;
+  mimeType: string;
+  base64: string;
+  fileSize: number;
+}
+
 interface NativeBridgeStateResult {
   state: "idle" | "recording";
   filePath?: string;
@@ -32,15 +39,18 @@ interface NativeBridge {
   stopRecording(): Promise<NativeBridgeResult<NativeBridgeStopResult>>;
   cancelRecording(): Promise<NativeBridgeResult<{ message: string }>>;
   getRecordingState(): Promise<NativeBridgeResult<NativeBridgeStateResult>>;
+  readRecordingFile?(filePath: string): Promise<NativeBridgeResult<NativeBridgeRecordingFileResult>>;
   onAudioPermissionResult(cb: (detail: NativeBridgePermissionResult) => void): void;
 }
 
 interface NativeBridgeHost {
+  getPackageInfo?(): string;
   requestAudioPermission(): string;
   startRecording(optionsJson?: string): string;
   stopRecording(): string;
   cancelRecording(): string;
   getRecordingState(): string;
+  readRecordingFile?(filePath: string): string;
 }
 
 declare interface Window {

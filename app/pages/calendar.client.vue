@@ -168,7 +168,7 @@
           @pointerdown.prevent="handleVoicePressStart"
           @pointermove.prevent="handleVoicePointerMove"
           @pointerup.prevent="handleVoicePressEnd"
-          @pointercancel.prevent="handleVoicePressEnd"
+          @pointercancel.prevent="handleVoicePressCancel"
         >
           <MicrophoneIcon v-if="voiceDisplayState !== 'processing'" class="w-6 h-6" />
           <SparklesIcon v-else class="w-6 h-6" />
@@ -268,6 +268,8 @@ const voiceProcessing = ref(false);
 const voiceActive = ref(false);
 const voiceTip = ref("长按说话，松手记账");
 const recordStartTimer = ref<number | null>(null);
+const voiceRecordStartedAt = ref(0);
+const minVoiceRecordMs = 900;
 
 const {
   isRecording,
@@ -548,6 +550,7 @@ const handleVoicePressStart = async (evt: PointerEvent) => {
       try {
         voiceTip.value = "录音中，松手结束";
         await startRecording();
+        voiceRecordStartedAt.value = Date.now();
         // getUserMedia 可能在松手之后才返回，此时 voiceActive 已被清掉
         if (!voiceActive.value) {
           await cancelRecording();
@@ -610,6 +613,12 @@ const handleVoicePressEnd = async (evt: PointerEvent) => {
 
   try {
     voiceTip.value = "正在处理...";
+    if (Date.now() - voiceRecordStartedAt.value < minVoiceRecordMs) {
+      await cancelRecording();
+      voiceTip.value = "长按说话，松手记账";
+      Alert.error("按住时间太短，请长按说完后松手");
+      return;
+    }
     const audioBlob = await stopRecording();
     if (audioBlob.size > 0) {
       await handleVoiceParse(audioBlob);
@@ -618,6 +627,24 @@ const handleVoicePressEnd = async (evt: PointerEvent) => {
     }
   } catch {
     voiceTip.value = "长按说话，松手记账";
+  }
+};
+
+const handleVoicePressCancel = async (evt: PointerEvent) => {
+  if (dragState.pointerId !== evt.pointerId) return;
+
+  if (recordStartTimer.value) {
+    clearTimeout(recordStartTimer.value);
+    recordStartTimer.value = null;
+  }
+
+  resetDragState();
+  if (!voiceActive.value) return;
+  voiceActive.value = false;
+  voiceTip.value = "长按说话，松手记账";
+
+  if (isRecording.value) {
+    await cancelRecording();
   }
 };
 

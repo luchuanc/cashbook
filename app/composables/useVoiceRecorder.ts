@@ -55,6 +55,10 @@ export const useVoiceRecorder = (options?: VoiceRecorderOptions) => {
         invoke<{ message: string }>("cancelRecording"),
       getRecordingState: () =>
         invoke<NativeBridgeStateResult>("getRecordingState"),
+      readRecordingFile: window.NativeBridgeHost.readRecordingFile
+        ? (filePath: string) =>
+            invoke<NativeBridgeRecordingFileResult>("readRecordingFile", [filePath])
+        : undefined,
       onAudioPermissionResult: (cb: (detail: NativeBridgePermissionResult) => void) => {
         window.addEventListener("audioPermissionResult", (e) => {
           cb((e as CustomEvent<NativeBridgePermissionResult>).detail);
@@ -194,6 +198,17 @@ export const useVoiceRecorder = (options?: VoiceRecorderOptions) => {
     }
     const res = await bridge.stopRecording();
     const filePath = res.data.filePath;
+
+    if (bridge.readRecordingFile) {
+      const fileRes = await bridge.readRecordingFile(filePath);
+      const binary = atob(fileRes.data.base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return new Blob([bytes], { type: fileRes.data.mimeType });
+    }
+
     const fileUrl = `file://${filePath}`;
     const response = await fetch(fileUrl);
     return await response.blob();

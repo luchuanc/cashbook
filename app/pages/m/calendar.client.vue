@@ -22,6 +22,8 @@ const voiceProcessing = ref(false);
 const voiceTip = ref("长按语音记账");
 const voicePrefill = ref<Record<string, any> | null>(null);
 const recordStartTimer = ref<number | null>(null);
+const voiceRecordStartedAt = ref(0);
+const minVoiceRecordMs = 900;
 
 const selectedDay = ref(new Date().toISOString().slice(0, 10));
 const {
@@ -285,6 +287,7 @@ const startVoice = async (evt: PointerEvent) => {
     try {
       voiceTip.value = "录音中，松手结束";
       await startRecording();
+      voiceRecordStartedAt.value = Date.now();
       if (!voiceActive.value) {
         await cancelRecording();
         voiceTip.value = "长按语音记账";
@@ -313,6 +316,12 @@ const stopVoice = async () => {
 
   try {
     voiceTip.value = "正在处理...";
+    if (Date.now() - voiceRecordStartedAt.value < minVoiceRecordMs) {
+      await cancelRecording();
+      voiceTip.value = "长按语音记账";
+      Alert.error("按住时间太短，请长按说完后松手");
+      return;
+    }
     const audioBlob = await stopRecording();
     if (audioBlob.size > 0) {
       await parseVoiceFlow(audioBlob);
@@ -320,6 +329,21 @@ const stopVoice = async () => {
   } catch (err: any) {
     Alert.error(err?.message || "录音处理失败");
     voiceTip.value = "长按语音记账";
+  }
+};
+
+const cancelVoice = async () => {
+  if (recordStartTimer.value) {
+    clearTimeout(recordStartTimer.value);
+    recordStartTimer.value = null;
+  }
+
+  if (!voiceActive.value) return;
+  voiceActive.value = false;
+  voiceTip.value = "长按语音记账";
+
+  if (isRecording.value) {
+    await cancelRecording();
   }
 };
 
@@ -441,10 +465,10 @@ onBeforeUnmount(() => {
               : 'bg-white text-emerald-700 ring-emerald-100 dark:bg-slate-900 dark:ring-emerald-900',
           ]"
           type="button"
+          style="touch-action: none; user-select: none"
           @pointerdown.prevent="startVoice"
           @pointerup.prevent="stopVoice"
-          @pointercancel.prevent="stopVoice"
-          @pointerleave.prevent="stopVoice"
+          @pointercancel.prevent="cancelVoice"
         >
           <MicrophoneIcon class="h-5 w-5" />
           {{ voiceTip }}
